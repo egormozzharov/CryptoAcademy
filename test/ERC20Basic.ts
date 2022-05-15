@@ -64,5 +64,26 @@ describe("ERC20Basic", function () {
       await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(10100);
     });
   });
+
+  describe("burn", function () {
+    it("Shoud revert if caller is not an owner", async function () {
+      await expect(tokenContract.connect(addr1).burn(addr1.address, 100)).to.be.revertedWith("Only owner can call burn");
+    });
+
+    it("Shoud revert if zero-address was given", async function () {
+      await expect(tokenContract.connect(owner).burn(ethers.constants.AddressZero, 100)).to.be.revertedWith("ERC20: burn from the zero address is not allowed");
+    });
+
+    it("Shoud revert if given amount to burn exceeds the account balance", async function () {
+      await expect(tokenContract.connect(owner).burn(owner.address, 10001)).to.be.revertedWith("ERC20: burn amount exceeds balance");
+    });
+
+    it("Shoud burn successfully", async function () {
+      await expect(await tokenContract.connect(owner).burn(owner.address, 100))
+        .to.emit(tokenContract, "Transfer").withArgs(owner.address, ethers.constants.AddressZero, 100);
+      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(9900);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
+    });
+  });
 });
 

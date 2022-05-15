@@ -65,7 +65,8 @@ contract ERC20Basic {
     }
 
     function burn(address account, uint256 amount) public returns (bool) {
-        require(account != address(0), "ERC20: burn from the zero address");
+        require(msg.sender == _owner, "Only owner can call burn");
+        require(account != address(0), "ERC20: burn from the zero address is not allowed");
 
         uint256 accountBalance = balances[account];
         require(accountBalance >= amount, "ERC20: burn amount exceeds balance");
