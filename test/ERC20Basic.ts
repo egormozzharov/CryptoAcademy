@@ -9,9 +9,10 @@ describe("ERC20Basic", function () {
   let tokenContract: ERC20Basic;
   let owner: SignerWithAddress;
   let addr1: SignerWithAddress;
+  let addr2: SignerWithAddress;
 
   beforeEach(async function () {
-    [owner, addr1] = await ethers.getSigners();
+    [owner, addr1, addr2] = await ethers.getSigners();
 
     const contractFactory: ContractFactory = await ethers.getContractFactory("ERC20Basic", owner);
     tokenContract = (await contractFactory.deploy()) as ERC20Basic;
@@ -100,6 +101,53 @@ describe("ERC20Basic", function () {
         .to.emit(tokenContract, "Transfer").withArgs(owner.address, addr1.address, 100);
       await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
       await expect(await tokenContract.connect(owner).balanceOf(addr1.address)).to.be.equal(100);
+    });
+  });
+
+  describe("approve", function () {
+    it("Shoud revert when trying to approve to zero-address", async function () {
+      await expect(tokenContract.connect(owner).approve(ethers.constants.AddressZero, 100)).to.be.revertedWith("ERC20: approve to the zero address is not allowed");
+    });
+
+    it("Should approve successfully", async function () {
+      await expect(await tokenContract.connect(owner).approve(addr1.address, 100))
+        .to.emit(tokenContract, "Approval").withArgs(owner.address, addr1.address, 100);
+    });
+  });
+
+  describe("allowance", function () {
+    it("Should be able to see allowance to send 100 from owner", async function () {
+      await tokenContract.connect(owner).approve(addr1.address, 100);
+      await expect(await tokenContract.connect(owner).allowance(owner.address, addr1.address)).to.be.equal(100);
+    });
+  });
+
+  describe("transferFrom", function () {
+    it("Shoud revert when trying to send to zero-address", async function () {
+      await expect(tokenContract.connect(owner).transferFrom(owner.address, ethers.constants.AddressZero, 100))
+        .to.be.revertedWith("ERC20: transfer to the zero address is not allowed");
+    });
+
+    it("Shoud revert when trying to send amount which exceeds the sender balance", async function () {
+      await expect(tokenContract.connect(owner).transferFrom(owner.address, addr1.address, 10001)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+
+    it("Shoud revert when trying to send amount which exceeds the allowance", async function () {
+      await expect(tokenContract.connect(owner).transferFrom(owner.address, addr1.address, 100))
+        .to.be.revertedWith("ERC20: transfer amount exceeds allowance");
+    });
+
+    it("Shoud transfer successfully", async function () {
+      //arrange
+      await tokenContract.connect(owner).approve(addr1.address, 100);
+
+      //act
+      await tokenContract.connect(addr1).transferFrom(owner.address, addr2.address, 100)
+
+      //assert
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
+      await expect(await tokenContract.connect(owner).balanceOf(addr1.address)).to.be.equal(0);
+      await expect(await tokenContract.connect(owner).balanceOf(addr2.address)).to.be.equal(100);
     });
   });
 });

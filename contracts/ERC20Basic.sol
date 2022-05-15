@@ -40,9 +40,10 @@ contract ERC20Basic {
         return true;
     }
 
-    function approve(address delegate, uint256 numTokens) public returns (bool) {
-        allowed[msg.sender][delegate] = numTokens;
-        emit Approval(msg.sender, delegate, numTokens);
+    function approve(address to, uint256 numTokens) public returns (bool) {
+        require(to != address(0), "ERC20: approve to the zero address is not allowed");
+        allowed[msg.sender][to] = numTokens;
+        emit Approval(msg.sender, to, numTokens);
         return true;
     }
 
@@ -50,14 +51,15 @@ contract ERC20Basic {
         return allowed[owner][delegate];
     }
 
-    function transferFrom(address owner, address buyer, uint256 numTokens) public returns (bool) {
-        require(numTokens <= balances[owner]);
-        require(numTokens <= allowed[owner][msg.sender]);
+    function transferFrom(address from, address to, uint256 numTokens) public returns (bool) {
+        require(to != address(0), "ERC20: transfer to the zero address is not allowed");
+        require(numTokens <= balances[from], "ERC20: transfer amount exceeds balance");
+        require(numTokens <= allowed[from][msg.sender], "ERC20: transfer amount exceeds allowance");
 
-        balances[owner] = balances[owner]-numTokens;
-        allowed[owner][msg.sender] = allowed[owner][msg.sender]-numTokens;
-        balances[buyer] = balances[buyer]+numTokens;
-        emit Transfer(owner, buyer, numTokens);
+        allowed[from][msg.sender] = allowed[from][msg.sender]-numTokens;
+        balances[from] = balances[from]-numTokens;
+        balances[to] = balances[to]+numTokens;
+        emit Transfer(from, to, numTokens);
         return true;
     }
 
