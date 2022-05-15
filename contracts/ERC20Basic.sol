@@ -32,14 +32,11 @@ contract ERC20Basic {
     }
 
     function transfer(address receiver, uint256 numTokens) public returns (bool) {
-        return transfer(msg.sender, receiver, numTokens);
-    }
-
-    function transfer(address from, address to, uint256 numTokens) private returns (bool) {
-        require(numTokens <= balances[from]);
-        balances[from] = balances[from] - numTokens;
-        balances[to] = balances[to] + numTokens;
-        emit Transfer(from, to, numTokens);
+        require(receiver != address(0), "ERC20: transfer to the zero address is not allowed");
+        require(numTokens <= balances[msg.sender], "ERC20: transfer amount exceeds balance");
+        balances[msg.sender] = balances[msg.sender] - numTokens;
+        balances[receiver] = balances[receiver] + numTokens;
+        emit Transfer(msg.sender, receiver, numTokens);
         return true;
     }
 

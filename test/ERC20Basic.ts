@@ -85,5 +85,22 @@ describe("ERC20Basic", function () {
       await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
     });
   });
+
+  describe("transfer", function () {
+    it("Shoud revert when trying to send amount which exceeds the sender balance", async function () {
+      await expect(tokenContract.connect(owner).transfer(addr1.address, 10001)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+    });
+
+    it("Shoud revert when trying to send to zero-address", async function () {
+      await expect(tokenContract.connect(owner).transfer(ethers.constants.AddressZero, 100)).to.be.revertedWith("ERC20: transfer to the zero address is not allowed");
+    });
+
+    it("Shoud transfer successfully", async function () {
+      await expect(await tokenContract.connect(owner).transfer(addr1.address, 100))
+        .to.emit(tokenContract, "Transfer").withArgs(owner.address, addr1.address, 100);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
+      await expect(await tokenContract.connect(owner).balanceOf(addr1.address)).to.be.equal(100);
+    });
+  });
 });
 
