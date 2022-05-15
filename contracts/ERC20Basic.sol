@@ -79,8 +79,8 @@ contract ERC20Basic {
     }
 
     function mint(address account, uint256 amount) public returns (bool) {
-        require(msg.sender != _owner, "Only owner can call mint");
-        require(account != address(0), "ERC20: mint to the zero address");
+        require(msg.sender == _owner, "Only owner can call mint");
+        require(account != address(0), "ERC20: mint to the zero address is not allowed");
         totalSupply_ = totalSupply_ + amount;
         balances[account] = balances[account] + amount;
         emit Transfer(address(0), account, amount);
