@@ -7,6 +7,8 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
+import { ContractFactory, Contract } from 'ethers';
+import { HardhatRuntimeEnvironment } from 'hardhat/types';
 
 dotenv.config();
 
@@ -17,6 +19,15 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   for (const account of accounts) {
     console.log(account.address);
   }
+});
+
+task("name", "Get token name", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const [owner] = await hre.ethers.getSigners();
+    const contractFactory: ContractFactory = await hre.ethers.getContractFactory("ERC20Basic", owner);
+    const deployed_contract_address: string = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";
+    const tokenContract: Contract = await contractFactory.attach(deployed_contract_address);
+    const name: string = await tokenContract.name();
+    console.log(`Name: ${name}`);
 });
 
 // You need to export an object to set up your config
