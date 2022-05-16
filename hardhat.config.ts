@@ -13,6 +13,16 @@ import { ERC20Basic } from './typechain-types/ERC20Basic';
 
 dotenv.config();
 
+const CONTRACT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";
+const CONTRACT_NAME = "ERC20Basic";
+
+const getContract = async (hre: HardhatRuntimeEnvironment): Promise<ERC20Basic> => {
+  const [owner] = await hre.ethers.getSigners();
+  const contractFactory: ContractFactory = await hre.ethers.getContractFactory(CONTRACT_NAME, owner);
+  const tokenContract = await contractFactory.attach(CONTRACT_ADDRESS).connect(owner);
+  return tokenContract as ERC20Basic;
+}
+
 // This is a sample Hardhat task. To learn how to create your own go to
 // https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
@@ -23,21 +33,27 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 });
 
 task("name", "Get token name", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-    const [owner] = await hre.ethers.getSigners();
-    const contractFactory: ContractFactory = await hre.ethers.getContractFactory("ERC20Basic", owner);
-    const deployed_contract_address: string = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";
-    const tokenContract = (await contractFactory.attach(deployed_contract_address)) as ERC20Basic;
-    const name: string = await tokenContract.connect(owner).name();
+    const tokenContract = await getContract(hre);
+    const name: string = await tokenContract.name();
     console.log(`Name: ${name}`);
 });
 
 task("approve", "Approve allowance", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-  const [owner] = await hre.ethers.getSigners();
-  const contractFactory: ContractFactory = await hre.ethers.getContractFactory("ERC20Basic", owner);
-  const deployed_contract_address: string = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";
-  const tokenContract: ERC20Basic = (await contractFactory.attach(deployed_contract_address)) as ERC20Basic;
-  const result = await tokenContract.connect(owner).approve(taskArgs.to, taskArgs.numTokens);
+  const tokenContract: ERC20Basic = (await getContract(hre)) as ERC20Basic;
+  const result = await tokenContract.approve("0x4F745f87488A3d5fb7309892F8CEcCeb97a65610", 100);
   console.log(`Approve: ${result}`);
+});
+
+task("transfer", "Transfer tokens", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+  const tokenContract = await getContract(hre);
+  await tokenContract.transfer("0x4F745f87488A3d5fb7309892F8CEcCeb97a65610", 100);
+  console.log('Transfered');
+});
+
+task("transferfrom", "Transfer tokens from another account", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+  const tokenContract = await getContract(hre);
+  await tokenContract.transferFrom("0x4F745f87488A3d5fb7309892F8CEcCeb97a65610", "0xc0F67917f5dD5a7B60cfca80Cdd25CaEf61452d0", 100);
+  console.log('Transfered');
 });
 
 // You need to export an object to set up your config
