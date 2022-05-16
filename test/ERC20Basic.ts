@@ -51,7 +51,7 @@ describe("ERC20Basic", function () {
 
   describe("mint", function () {
     it("Shoud revert if caller is not an owner", async function () {
-      await expect(tokenContract.connect(addr1).mint(owner.address, 100)).to.be.revertedWith("Only owner can call mint");
+      await expect(tokenContract.connect(addr1).mint(owner.address, 100)).to.be.revertedWith("Only owner allowed");
     });
 
     it("Shoud revert if zero-address was given", async function () {
@@ -68,7 +68,7 @@ describe("ERC20Basic", function () {
 
   describe("burn", function () {
     it("Shoud revert if caller is not an owner", async function () {
-      await expect(tokenContract.connect(addr1).burn(addr1.address, 100)).to.be.revertedWith("Only owner can call burn");
+      await expect(tokenContract.connect(addr1).burn(addr1.address, 100)).to.be.revertedWith("Only owner allowed");
     });
 
     it("Shoud revert if zero-address was given", async function () {
