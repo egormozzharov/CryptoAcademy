@@ -23,8 +23,6 @@ const getContract = async (hre: HardhatRuntimeEnvironment): Promise<ERC20Basic> 
   return tokenContract as ERC20Basic;
 }
 
-// This is a sample Hardhat task. To learn how to create your own go to
-// https://hardhat.org/guides/create-task.html
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts: SignerWithAddress[] = await hre.ethers.getSigners();
   for (const account of accounts) {
@@ -38,26 +36,41 @@ task("name", "Get token name", async (taskArgs: any, hre: HardhatRuntimeEnvironm
     console.log(`Name: ${name}`);
 });
 
-task("approve", "Approve allowance", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-  const tokenContract: ERC20Basic = (await getContract(hre)) as ERC20Basic;
-  const result = await tokenContract.approve("0x4F745f87488A3d5fb7309892F8CEcCeb97a65610", 100);
-  console.log(`Approve: ${result}`);
+task("approve", "Approve allowance")
+  .addParam("to", "Address of the spender")
+  .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const tokenContract: ERC20Basic = (await getContract(hre)) as ERC20Basic;
+    const result = await tokenContract.approve(taskArgs.to, 100);
+    console.log(`Approve: ${result}`);
 });
 
-task("transfer", "Transfer tokens", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-  const tokenContract = await getContract(hre);
-  await tokenContract.transfer("0x4F745f87488A3d5fb7309892F8CEcCeb97a65610", 100);
-  console.log('Transfered');
+task("transfer", "Transfer tokens")
+  .addParam("to", "Address to transfer to")
+  .addParam("amount", "Amount to transfer")
+  .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const tokenContract = await getContract(hre);
+    await tokenContract.transfer(taskArgs.to, taskArgs.amount, {gasPrice: 50000000000});
+    console.log('Transfered');
 });
 
-task("transferfrom", "Transfer tokens from another account", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-  const tokenContract = await getContract(hre);
-  await tokenContract.transferFrom("0x4F745f87488A3d5fb7309892F8CEcCeb97a65610", "0xc0F67917f5dD5a7B60cfca80Cdd25CaEf61452d0", 100);
-  console.log('Transfered');
+task("transferfrom", "Transfer tokens from another account")
+  .addParam("from", "From address")
+  .addParam("to", "To address")
+  .addParam("amount", "To address")
+  .setAction(async ({taskArgs}: any, hre: HardhatRuntimeEnvironment) => {
+    const tokenContract = await getContract(hre);
+    await tokenContract.transferFrom(taskArgs.from, taskArgs.to, taskArgs.amount, {gasPrice: 50000000000});
+    console.log('Transfered');
 });
 
-// You need to export an object to set up your config
-// Go to https://hardhat.org/config/ to learn more
+task("balanceof", "Balance of",)
+  .addParam("account", "The account's address", "string")
+  .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const tokenContract = await getContract(hre);
+    const balace = await tokenContract.balanceOf(taskArgs.account);
+    console.log(`Balance of ${taskArgs.account}: ${balace}`);
+});
+
 
 const config: HardhatUserConfig = {
   solidity: "0.8.4",
