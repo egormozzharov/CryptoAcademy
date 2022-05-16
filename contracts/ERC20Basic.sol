@@ -11,12 +11,17 @@ contract ERC20Basic {
     string public constant symbol = "ERC";
     uint8 public constant decimals = 2;
     
-    address public _owner;
+    address public immutable _owner;
 
     mapping(address => uint256) balances;
     mapping(address => mapping (address => uint256)) allowed;
 
     uint256 totalSupply_ = 10000;
+
+    modifier onlyOwner {
+      require(msg.sender == _owner, "Only owner allowed");
+      _;
+    }
 
     constructor() {
         _owner = msg.sender;
@@ -63,8 +68,7 @@ contract ERC20Basic {
         return true;
     }
 
-    function burn(address account, uint256 amount) public returns (bool) {
-        require(msg.sender == _owner, "Only owner can call burn");
+    function burn(address account, uint256 amount) public onlyOwner returns (bool) {
         require(account != address(0), "ERC20: burn from the zero address is not allowed");
 
         uint256 accountBalance = balances[account];
@@ -78,8 +82,7 @@ contract ERC20Basic {
         return true;
     }
 
-    function mint(address account, uint256 amount) public returns (bool) {
-        require(msg.sender == _owner, "Only owner can call mint");
+    function mint(address account, uint256 amount) public onlyOwner returns (bool) {
         require(account != address(0), "ERC20: mint to the zero address is not allowed");
         totalSupply_ = totalSupply_ + amount;
         balances[account] = balances[account] + amount;
