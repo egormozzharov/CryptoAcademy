@@ -13,10 +13,10 @@ contract ERC20Basic {
     
     address public immutable _owner;
 
-    mapping(address => uint256) balances;
-    mapping(address => mapping (address => uint256)) allowed;
+    mapping(address => uint256) internal balances;
+    mapping(address => mapping (address => uint256)) internal allowed;
 
-    uint256 totalSupply_ = 10000;
+    uint256 internal totalSupply_ = 100000;
 
     modifier onlyOwner {
       require(msg.sender == _owner, "Only owner allowed");

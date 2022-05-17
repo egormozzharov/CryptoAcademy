@@ -10,7 +10,7 @@ async function main() {
   console.log("Deploying the contract...");
   const contractFactory: ContractFactory = await ethers.getContractFactory("ERC20Basic");
   console.log("Contract factory");
-  const contract: Contract = await contractFactory.deploy({gasPrice: 50000000000});
+  const contract: Contract = await contractFactory.deploy({gasPrice: 70000000000});
   await contract.deployed();
   console.log("ERC20Basic deployed to:", contract.address);
 }
