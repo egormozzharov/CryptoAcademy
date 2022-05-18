@@ -10,6 +10,7 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ERC20Basic } from './typechain-types/ERC20Basic';
+import { ethers } from 'ethers';
 
 dotenv.config();
 
@@ -27,6 +28,14 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts: SignerWithAddress[] = await hre.ethers.getSigners();
   for (const account of accounts) {
     console.log(account.address);
+  }
+});
+
+task("balances", "Prints the balances of all accounts", async (taskArgs, hre) => {
+  const accounts: SignerWithAddress[] = await hre.ethers.getSigners();
+  for (const account of accounts) {
+    const balance0ETH = await ethers.getDefaultProvider().getBalance(account.address);
+    console.log(`${account.address} ${balance0ETH.toString()} ETH`);
   }
 });
 
@@ -76,6 +85,12 @@ const config: HardhatUserConfig = {
   solidity: "0.8.4",
   defaultNetwork: "hardhat",
   networks: {
+    hardhat: {
+      forking: {
+        url: process.env.RINKEBY_URL || "",
+        blockNumber: 10692578
+      }
+    },
     ropsten: {
       url: process.env.ROPSTEN_URL || "",
       accounts:
