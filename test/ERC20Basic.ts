@@ -39,13 +39,13 @@ describe("ERC20Basic", function () {
 
   describe("totalSupply", function () {
     it("Shoud be able to get total supply", async function () {
-      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(10000);
+      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(100000);
     });
   });
 
   describe("balanceOf", function () {
     it("Shoud return address balance", async function () {
-      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(10000);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(100000);
     });
   });
 
@@ -61,8 +61,8 @@ describe("ERC20Basic", function () {
     it("Shoud mint successfully", async function () {
       await expect(await tokenContract.connect(owner).mint(owner.address, 100))
         .to.emit(tokenContract, "Transfer").withArgs(ethers.constants.AddressZero, owner.address, 100);
-      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(10100);
-      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(10100);
+      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(100100);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(100100);
     });
   });
 
@@ -76,20 +76,20 @@ describe("ERC20Basic", function () {
     });
 
     it("Shoud revert if given amount to burn exceeds the account balance", async function () {
-      await expect(tokenContract.connect(owner).burn(owner.address, 10001)).to.be.revertedWith("ERC20: burn amount exceeds balance");
+      await expect(tokenContract.connect(owner).burn(owner.address, 100001)).to.be.revertedWith("ERC20: burn amount exceeds balance");
     });
 
     it("Shoud burn successfully", async function () {
       await expect(await tokenContract.connect(owner).burn(owner.address, 100))
         .to.emit(tokenContract, "Transfer").withArgs(owner.address, ethers.constants.AddressZero, 100);
-      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(9900);
-      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
+      await expect(await tokenContract.connect(owner).totalSupply()).to.be.equal(99900);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(99900);
     });
   });
 
   describe("transfer", function () {
     it("Shoud revert when trying to send amount which exceeds the sender balance", async function () {
-      await expect(tokenContract.connect(owner).transfer(addr1.address, 10001)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      await expect(tokenContract.connect(owner).transfer(addr1.address, 100001)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
     it("Shoud revert when trying to send to zero-address", async function () {
@@ -99,7 +99,7 @@ describe("ERC20Basic", function () {
     it("Shoud transfer successfully", async function () {
       await expect(await tokenContract.connect(owner).transfer(addr1.address, 100))
         .to.emit(tokenContract, "Transfer").withArgs(owner.address, addr1.address, 100);
-      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(99900);
       await expect(await tokenContract.connect(owner).balanceOf(addr1.address)).to.be.equal(100);
     });
   });
@@ -129,7 +129,7 @@ describe("ERC20Basic", function () {
     });
 
     it("Shoud revert when trying to send amount which exceeds the sender balance", async function () {
-      await expect(tokenContract.connect(owner).transferFrom(owner.address, addr1.address, 10001)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
+      await expect(tokenContract.connect(owner).transferFrom(owner.address, addr1.address, 100001)).to.be.revertedWith("ERC20: transfer amount exceeds balance");
     });
 
     it("Shoud revert when trying to send amount which exceeds the allowance", async function () {
@@ -145,7 +145,7 @@ describe("ERC20Basic", function () {
       await tokenContract.connect(addr1).transferFrom(owner.address, addr2.address, 100)
 
       //assert
-      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(9900);
+      await expect(await tokenContract.connect(owner).balanceOf(owner.address)).to.be.equal(99900);
       await expect(await tokenContract.connect(owner).balanceOf(addr1.address)).to.be.equal(0);
       await expect(await tokenContract.connect(owner).balanceOf(addr2.address)).to.be.equal(100);
     });
