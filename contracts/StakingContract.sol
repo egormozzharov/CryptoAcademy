@@ -5,7 +5,7 @@ import "./interfaces/IERC20.sol";
 
 contract StakingContract 
 {
-    address public lpTokenAddress = 0xaB32ca8673F6754e0209305b89078c0465f99d8c;
+    address public immutable _lpTokenAddress;
 
     address public owner;
 
@@ -33,16 +33,17 @@ contract StakingContract
         _;
     }
 
-    constructor() {
+    constructor(address lpTokenAddress) {
+        _lpTokenAddress = lpTokenAddress;
         owner = msg.sender;
         locked = false;
         timePeriod = block.timestamp + timePeriodInSeconds;
     }
 
     function stake(uint256 amount) public {
-        require(IERC20(lpTokenAddress).balanceOf(msg.sender) >= amount,"Sender balance is less than staking amount");
-        require(IERC20(lpTokenAddress).allowance(msg.sender, address(this)) >= amount, "Sender should give allowance for the lpToken to the current contract");
-        IERC20(lpTokenAddress).transferFrom(msg.sender, address(this), amount);
+        require(IERC20(_lpTokenAddress).balanceOf(msg.sender) >= amount,"Sender balance is less than staking amount");
+        require(IERC20(_lpTokenAddress).allowance(msg.sender, address(this)) >= amount, "Sender should give allowance for the lpToken to the current contract");
+        IERC20(_lpTokenAddress).transferFrom(msg.sender, address(this), amount);
         balances[msg.sender] = balances[msg.sender] + amount;
         emit TokensStaked(msg.sender, amount);
     }
@@ -52,7 +53,7 @@ contract StakingContract
         if (block.timestamp >= timePeriod) {
             alreadyWithdrawn[msg.sender] = alreadyWithdrawn[msg.sender] + amount;
             balances[msg.sender] = balances[msg.sender] - amount;
-            IERC20(lpTokenAddress).transfer(msg.sender, amount);
+            IERC20(_lpTokenAddress).transfer(msg.sender, amount);
             emit TokensUnstaked(msg.sender, amount);
         } else {
             revert("Tokens are only available after correct time period has elapsed");
