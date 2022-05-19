@@ -3,61 +3,62 @@ pragma solidity ^0.8.0;
 
 import "./interfaces/IERC20.sol";
 
+// http://batog.info/papers/scalable-reward-distribution.pdf
 contract StakingContract 
 {
-    address public immutable _lpTokenAddress;
-
     address public owner;
+    address public _stakingTokenAddress;
+    address public _rewardTokenAddress;
+    uint256 public _timePeriodInSeconds;
 
-    bool internal locked;
-
-    uint256 public timePeriod;
-    uint256 public timePeriodInSeconds = 3600;
-
-    mapping(address => uint256) public alreadyWithdrawn;
-    mapping(address => uint256) public balances;
-    uint256 public contractBalance;
+    mapping(address => uint256) internal balances;
+    mapping(address => uint256) internal timeToUnstake;
+    mapping(address => uint256) internal initialDividentsMultipliers;
+    uint256 internal currentDividentMultiplier;
+    uint256 internal totalSupply;
 
     event TokensStaked(address from, uint256 amount);
-    event TokensUnstaked(address to, uint256 amount);
-
-    modifier noReentrant() {
-        require(!locked, "No re-entrancy");
-        locked = true;
-        _;
-        locked = false;
-    }
+    event TokensUnstaked(address to, uint256 amount, uint256 rewardAmount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Message sender must be the contract's owner.");
         _;
     }
 
-    constructor(address lpTokenAddress) {
-        _lpTokenAddress = lpTokenAddress;
+    constructor(address tokenAddress, address rewardTokenAddress, uint256 timePeriod) {
         owner = msg.sender;
-        locked = false;
-        timePeriod = block.timestamp + timePeriodInSeconds;
+        _stakingTokenAddress = tokenAddress;
+        _rewardTokenAddress = rewardTokenAddress;
+        _timePeriodInSeconds = timePeriod;
     }
 
     function stake(uint256 amount) public {
-        require(IERC20(_lpTokenAddress).balanceOf(msg.sender) >= amount,"Sender balance is less than staking amount");
-        require(IERC20(_lpTokenAddress).allowance(msg.sender, address(this)) >= amount, "Sender should give allowance for the lpToken to the current contract");
-        IERC20(_lpTokenAddress).transferFrom(msg.sender, address(this), amount);
-        balances[msg.sender] = balances[msg.sender] + amount;
+        require(IERC20(_stakingTokenAddress).balanceOf(msg.sender) >= amount,"Sender balance is less than staking amount");
+        require(IERC20(_stakingTokenAddress).allowance(msg.sender, address(this)) >= amount, "Sender should give allowance for the lpToken to the current contract");
+
+        IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
+        balances[msg.sender] = amount;
+        totalSupply += amount;
+        timeToUnstake[msg.sender] = block.timestamp + _timePeriodInSeconds;
+        initialDividentsMultipliers[msg.sender] = currentDividentMultiplier;
         emit TokensStaked(msg.sender, amount);
     }
 
-    function unstakeTokens(uint256 amount) public {
-        require(balances[msg.sender] >= amount, "Insufficient token balance, try lesser amount");
-        if (block.timestamp >= timePeriod) {
-            alreadyWithdrawn[msg.sender] = alreadyWithdrawn[msg.sender] + amount;
-            balances[msg.sender] = balances[msg.sender] - amount;
-            IERC20(_lpTokenAddress).transfer(msg.sender, amount);
-            emit TokensUnstaked(msg.sender, amount);
-        } else {
-            revert("Tokens are only available after correct time period has elapsed");
-        }
+    function distribute(uint256 dividentsAmount) onlyOwner public {
+        require(IERC20(_rewardTokenAddress).balanceOf(address(this)) >= dividentsAmount, "Contract balance is less than reward amount");
+        currentDividentMultiplier = currentDividentMultiplier + dividentsAmount / totalSupply;
+    }
+
+    function widthdraw() public {
+        require(block.timestamp >= timeToUnstake[msg.sender], "Tokens are only available after correct time period has elapsed");
+        require(balances[msg.sender] > 0, "Sender has no tokens to unstake");
+        uint deposited = balances[msg.sender];
+        uint reward = deposited * (currentDividentMultiplier - initialDividentsMultipliers[msg.sender]);
+        totalSupply -= deposited;
+        balances[msg.sender] = 0;
+        IERC20(_stakingTokenAddress).transfer(msg.sender, deposited);
+        IERC20(_rewardTokenAddress).transfer(msg.sender, reward);
+        emit TokensUnstaked(msg.sender, deposited, reward);
     }
 }
 
