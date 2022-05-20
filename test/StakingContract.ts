@@ -55,11 +55,18 @@ describe("StakingContract", function () {
     lpToken = (await ethers.getContractAt("IERC20", lpTokenAddress)) as IERC20;
     const lpTokenBalance = await lpToken.connect(owner).balanceOf(owner.address);
 
-    stakingContract = (await deployContract("StakingContract", lpTokenAddress, customToken.address, 20, 3600)) as StakingContract;
+    stakingContract = (await deployContract("StakingContract")) as StakingContract;
+    await stakingContract.init(lpTokenAddress, customToken.address, 20, 3600);
     lpToken.connect(owner).approve(stakingContract.address, lpTokenBalance);
   });
 
-  describe("stake", function () {
+  describe("stake", async function () {
+    it("Shoud revert if contract is not initialized", async function () {
+      const stakingContract = (await deployContract("StakingContract")) as StakingContract;
+      await expect(stakingContract.connect(owner).stake(customToken.address))
+      .to.be.revertedWith("Contract should be initialized first");
+    });
+
     it("Shoud stake succsesfully", async function () {
       await expect(await stakingContract.connect(owner).stake(100))
       .to.emit(stakingContract, "TokensStaked").withArgs(owner.address, 100);

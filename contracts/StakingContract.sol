@@ -25,7 +25,7 @@ contract StakingContract
     }
 
     modifier initialized {
-        require(_isInitialized = true, "Contract should be initialized first");
+        require(_isInitialized == true, "Contract should be initialized first");
         _;
     }
 
