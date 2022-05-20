@@ -50,10 +50,6 @@ describe("ERC20Basic", function () {
   });
 
   describe("mint", function () {
-    it("Shoud revert if caller is not an owner", async function () {
-      await expect(tokenContract.connect(addr1).mint(owner.address, 100)).to.be.revertedWith("Only owner allowed");
-    });
-
     it("Shoud revert if zero-address was given", async function () {
       await expect(tokenContract.connect(owner).mint(ethers.constants.AddressZero, 100)).to.be.revertedWith("ERC20: mint to the zero address is not allowed");
     });

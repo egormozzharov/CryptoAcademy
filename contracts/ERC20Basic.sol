@@ -82,7 +82,7 @@ contract ERC20Basic {
         return true;
     }
 
-    function mint(address account, uint256 amount) public onlyOwner returns (bool) {
+    function mint(address account, uint256 amount) public returns (bool) {
         require(account != address(0), "ERC20: mint to the zero address is not allowed");
         totalSupply_ = totalSupply_ + amount;
         balances[account] = balances[account] + amount;
