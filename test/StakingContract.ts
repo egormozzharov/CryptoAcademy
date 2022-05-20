@@ -7,11 +7,7 @@ import { StakingContract } from '../typechain-types/StakingContract';
 import { IUniswapV2Router02 } from "../typechain-types/interfaces/IUniswapV2Router02";
 import { IERC20 } from '../typechain-types/interfaces/IERC20';
 import { IUniswapV2Factory } from '../typechain-types/interfaces/IUniswapV2Factory';
-
-
-const forwardTimestamp = async (timestampInSecondsDelta: number) => {
-  return await ethers.provider.send("evm_mine", [(await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp + timestampInSecondsDelta]);
-}
+import { blockTimestampTools } from "../scripts/tools";
 
 describe("StakingContract", function () {
 
@@ -83,7 +79,7 @@ describe("StakingContract", function () {
     
     it("Shoud unstake succsesfully", async function () {
       await stakingContract.connect(owner).stake(100);
-      await forwardTimestamp(3600);
+      await blockTimestampTools.forwardTimestamp(3600);
       await expect(await stakingContract.connect(owner).unstake())
       .to.emit(stakingContract, "TokensUnstaked").withArgs(owner.address, 100);
       expect(await stakingContract.connect(owner).balances(owner.address)).to.eq(0);
@@ -102,9 +98,16 @@ describe("StakingContract", function () {
 
     it("Should claim successfully", async function () {
       await stakingContract.connect(owner).stake(100);
-      await forwardTimestamp(3600);
+      await blockTimestampTools.forwardTimestamp(4000);
       expect(await stakingContract.connect(owner).claim())
       .to.emit(stakingContract, "RewardsClaimed").withArgs(owner.address, 20);
+    });
+
+    it("Should claim successfully after multiple rewards periods", async function () {
+      await stakingContract.connect(owner).stake(100);
+      await blockTimestampTools.forwardTimestamp(9000);
+      expect(await stakingContract.connect(owner).claim())
+      .to.emit(stakingContract, "RewardsClaimed").withArgs(owner.address, 40);
     });
   });
 });
