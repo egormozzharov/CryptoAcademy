@@ -47,7 +47,7 @@ contract StakingContract
     function claim() initialized public {
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
-        uint256 rewardMultiplier = (block.timestamp - stakeTime[msg.sender])/ _rewardIntervalInSeconds;
+        uint256 rewardMultiplier = (block.timestamp - stakeTime[msg.sender]) / _rewardIntervalInSeconds;
         uint256 reward = ((balances[msg.sender] * _rewardPercentage / 100) * rewardMultiplier);
         stakeTime[msg.sender] = block.timestamp + _rewardIntervalInSeconds;
         IMintable(_rewardTokenAddress).mint(address(this), reward);

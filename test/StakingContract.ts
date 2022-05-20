@@ -38,7 +38,6 @@ describe("StakingContract", function () {
 
     customToken = (await deployContract("ERC20Basic")) as ERC20Basic;
     customToken.connect(owner).approve(UniswapV2Router02Address, 1000);
-
     const router: IUniswapV2Router02 = (await ethers.getContractAt("IUniswapV2Router02", UniswapV2Router02Address)) as IUniswapV2Router02;
     await router.addLiquidityETH(
       customToken.address,

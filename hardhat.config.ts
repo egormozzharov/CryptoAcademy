@@ -10,21 +10,12 @@ import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { ContractFactory, Contract } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { ERC20Basic } from './typechain-types/ERC20Basic';
+import { StakingContract } from './typechain-types/StakingContract';
 import { ethers } from 'ethers';
 import { IERC20 } from './typechain-types/interfaces/IERC20';
+import { IUniswapV2Router02 } from "./typechain-types/interfaces/IUniswapV2Router02";
 
 dotenv.config();
-
-const CONTRACT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";
-const CONTRACT_NAME = "ERC20Basic";
-const LPTokenAddress = "0xaB32ca8673F6754e0209305b89078c0465f99d8c";
-
-const attachToContract = async (hre: HardhatRuntimeEnvironment): Promise<ERC20Basic> => {
-  const [owner] = await hre.ethers.getSigners();
-  const contractFactory: ContractFactory = await hre.ethers.getContractFactory(CONTRACT_NAME, owner);
-  const tokenContract = await contractFactory.attach(CONTRACT_ADDRESS).connect(owner);
-  return tokenContract as ERC20Basic;
-}
 
 task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   const accounts: SignerWithAddress[] = await hre.ethers.getSigners();
@@ -40,6 +31,19 @@ task("balances", "Prints the balances of all accounts", async (taskArgs, hre) =>
     console.log(`${account.address} ${balance0ETH.toString()} ETH`);
   }
 });
+
+
+//ERC20Basic tasks
+const ERC20BASCIC_CONTRACT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";
+const STAKING_CONTARCT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_STAKING_CONTARCT_ADDRESS || "";
+const CONTRACT_NAME = "ERC20Basic";
+
+const attachToContract = async (hre: HardhatRuntimeEnvironment): Promise<ERC20Basic> => {
+  const [owner] = await hre.ethers.getSigners();
+  const contractFactory: ContractFactory = await hre.ethers.getContractFactory(CONTRACT_NAME, owner);
+  const tokenContract = await contractFactory.attach(ERC20BASCIC_CONTRACT_ADDRESS).connect(owner);
+  return tokenContract as ERC20Basic;
+}
 
 task("name", "Get token name", async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
     const tokenContract = await attachToContract(hre);
@@ -82,12 +86,49 @@ task("balanceof", "Balance of",)
     console.log(`Balance of ${taskArgs.account}: ${balace}`);
 });
 
-task("lptokenbalance", "Balance of")
+//StakingTaks
+const UniswapV2Router02Address = process.env.UniswapV2Router02Address || "";
+
+task("createPool", "Create a new liquidity pool")
+  .addParam("customTokenAmount", "integer")
+  .addParam("ethAmount", "integer")
+  .addParam("deadline", "integer")
   .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
     const [owner] = await hre.ethers.getSigners();
-    const lpToken = await hre.ethers.getContractAt("IERC20", LPTokenAddress);
-    const balance = await lpToken.connect(owner).balanceOf(owner.address);
-    console.log(`Balance of lpToken ${owner.address}: ${balance}`);
+    const customToken: ERC20Basic = (await hre.ethers.getContractAt("ERC20Basic", ERC20BASCIC_CONTRACT_ADDRESS)) as ERC20Basic;
+    customToken.connect(owner).approve(UniswapV2Router02Address, taskArgs.customTokenAmount);
+    const router: IUniswapV2Router02 = (await hre.ethers.getContractAt("IUniswapV2Router02", UniswapV2Router02Address)) as IUniswapV2Router02;
+    await router.addLiquidityETH(
+      customToken.address,
+      taskArgs.customTokenAmount,
+      taskArgs.customTokenAmount,
+      taskArgs.ethAmount,
+      owner.address,
+      taskArgs.deadline,
+      { value: taskArgs.ethAmount }
+    );
+});
+
+task("stake", "Stake tokens")
+  .addParam("value", "integer")
+  .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const [owner] = await hre.ethers.getSigners();
+    const contract = (await hre.ethers.getContractAt("StakingContract", STAKING_CONTARCT_ADDRESS)) as StakingContract;
+    await contract.connect(owner).stake(taskArgs.value);
+});
+
+task("claim", "Claim reward tokens")
+  .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const [owner] = await hre.ethers.getSigners();
+    const contract = (await hre.ethers.getContractAt("StakingContract", STAKING_CONTARCT_ADDRESS)) as StakingContract;
+    await contract.claim();
+});
+
+task("Unstake", "Unstake tokens")
+  .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    const [owner] = await hre.ethers.getSigners();
+    const contract = (await hre.ethers.getContractAt("StakingContract", STAKING_CONTARCT_ADDRESS)) as StakingContract;
+    await contract.connect(owner).unstake();
 });
 
 const config: HardhatUserConfig = {
