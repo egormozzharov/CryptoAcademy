@@ -7,15 +7,7 @@ import { StakingContract } from '../typechain-types/StakingContract';
 import { IUniswapV2Router02 } from "../typechain-types/interfaces/IUniswapV2Router02";
 import { IERC20 } from '../typechain-types/interfaces/IERC20';
 import { IUniswapV2Factory } from '../typechain-types/interfaces/IUniswapV2Factory';
-import { getContractFactory } from '@nomiclabs/hardhat-ethers/types';
 
-const getCurrentBlockTimestamp = async () => {
-  return (await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp;
-}
-
-const setBlockTimestamp = async (timestampInSeconds: number) => {
-  await ethers.provider.send("evm_mine", [timestampInSeconds]);
-}
 
 const forwardTimestamp = async (timestampInSecondsDelta: number) => {
   return await ethers.provider.send("evm_mine", [(await ethers.provider.getBlock(await ethers.provider.getBlockNumber())).timestamp + timestampInSecondsDelta]);
@@ -87,6 +79,14 @@ describe("StakingContract", function () {
 
     it("Shoud revert when your balance equals zero", async function () {
       await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("You balance should be greater than 0");
+    });
+    
+    it("Shoud unstake succsesfully", async function () {
+      await stakingContract.connect(owner).stake(100);
+      await forwardTimestamp(3600);
+      await expect(await stakingContract.connect(owner).unstake())
+      .to.emit(stakingContract, "TokensUnstaked").withArgs(owner.address, 100);
+      expect(await stakingContract.connect(owner).balances(owner.address)).to.eq(0);
     });
   });
 
