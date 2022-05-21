@@ -38,18 +38,19 @@ contract StakingContract
     }
 
     function stake(uint256 amount) initialized public {
+        stakeTime[msg.sender] = block.timestamp;
         IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
         balances[msg.sender] = amount;
-        stakeTime[msg.sender] = block.timestamp;
         emit TokensStaked(msg.sender, amount);
     }
 
     function claim() initialized public {
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
+        
         uint256 rewardMultiplier = (block.timestamp - stakeTime[msg.sender]) / _rewardIntervalInSeconds;
         uint256 reward = ((balances[msg.sender] * _rewardPercentage / 100) * rewardMultiplier);
-        stakeTime[msg.sender] = block.timestamp + _rewardIntervalInSeconds;
+        stakeTime[msg.sender] = block.timestamp;
         IMintable(_rewardTokenAddress).mint(address(this), reward);
         IERC20(_rewardTokenAddress).transfer(msg.sender, reward);
         emit RewardsClaimed(msg.sender, reward);
@@ -58,6 +59,8 @@ contract StakingContract
     function unstake() initialized public {
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
+
+        stakeTime[msg.sender] = block.timestamp;
         uint deposited = balances[msg.sender];
         balances[msg.sender] = 0;
         IERC20(_stakingTokenAddress).transfer(msg.sender, deposited);
