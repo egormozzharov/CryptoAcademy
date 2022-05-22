@@ -20,16 +20,8 @@ contract StakingContract
     event TokensUnstaked(address to, uint256 amount);
     event RewardsClaimed(address to, uint256 amount);
 
-    constructor() {
+    constructor(address tokenAddress, address rewardTokenAddress, uint rewardPercentage, uint256 rewardIntervalInSeconds) {
         owner = msg.sender;
-    }
-
-    modifier initialized {
-        require(_isInitialized == true, "Contract should be initialized first");
-        _;
-    }
-
-    function init(address tokenAddress, address rewardTokenAddress, uint rewardPercentage, uint256 rewardIntervalInSeconds) public {
         _stakingTokenAddress = tokenAddress;
         _rewardTokenAddress = rewardTokenAddress;
         _rewardPercentage = rewardPercentage;
@@ -37,17 +29,20 @@ contract StakingContract
         _isInitialized = true;
     }
 
-    function stake(uint256 amount) initialized public {
-        stakeTime[msg.sender] = block.timestamp;
+    function stake(uint256 amount) public {
+        _claim();
         IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
         balances[msg.sender] = amount;
         emit TokensStaked(msg.sender, amount);
     }
 
-    function claim() initialized public {
+    function claim() public {
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
-        
+        _claim();
+    }
+
+    function _claim() private {
         uint256 rewardMultiplier = (block.timestamp - stakeTime[msg.sender]) / _rewardIntervalInSeconds;
         uint256 reward = ((balances[msg.sender] * _rewardPercentage / 100) * rewardMultiplier);
         stakeTime[msg.sender] = block.timestamp;
@@ -56,11 +51,10 @@ contract StakingContract
         emit RewardsClaimed(msg.sender, reward);
     }
 
-    function unstake() initialized public {
+    function unstake() public {
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
-
-        stakeTime[msg.sender] = block.timestamp;
+        _claim();
         uint deposited = balances[msg.sender];
         balances[msg.sender] = 0;
         IERC20(_stakingTokenAddress).transfer(msg.sender, deposited);
