@@ -59,6 +59,11 @@ describe("StakingContract", function () {
   });
 
   describe("stake", async function () {
+    it("Should revert if already have a stake", async function () {
+      await stakingContract.connect(owner).stake(100);
+      await expect(stakingContract.connect(owner).stake(100)).to.be.revertedWith("You already have tokens staked");
+    });
+
     it("Shoud stake succsesfully", async function () {
       await expect(await stakingContract.connect(owner).stake(100))
       .to.emit(stakingContract, "TokensStaked").withArgs(owner.address, 100);
