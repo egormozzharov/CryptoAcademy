@@ -30,6 +30,7 @@ contract StakingContract
     }
 
     function stake(uint256 amount) public {
+        require(balances[msg.sender] == 0, "You already have tokens staked");
         _claim();
         IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
         balances[msg.sender] = amount;
