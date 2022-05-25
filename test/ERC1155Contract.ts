@@ -19,7 +19,7 @@ describe("ERC1155", function () {
     await tokenContract.deployed();
   });
 
-  describe("mintNFT", function () {
+  describe("safeTransferFrom", function () {
     it("Shoud transfer successfully", async function () {
       // arrange
       const tokenId = 2;
@@ -29,7 +29,9 @@ describe("ERC1155", function () {
       // assert
       await expect(await tokenContract.balanceOf(await addr1.getAddress(), tokenId)).to.be.equal(amount);
     });
+  });
 
+  describe("safeBatchTransferFrom", function () {
     it("Shoud transfer batch successfully", async function () {
       // arrange
       const tokenId1 = 2;
@@ -44,7 +46,9 @@ describe("ERC1155", function () {
       await expect(await tokenContract.balanceOf(await addr1.getAddress(), tokenId1)).to.be.equal(amount1);
       await expect(await tokenContract.balanceOf(await addr1.getAddress(), tokenId2)).to.be.equal(amount2);
     });
+  });
 
+  describe("setApprovalForAll", function () {
     it("Shoud allow successfully", async function () {
       await tokenContract.connect(owner).setApprovalForAll(await addr1.getAddress(), true);
       await expect(await tokenContract.connect(addr1).safeTransferFrom(await owner.getAddress(), await addr1.getAddress(), 2, 1, []))

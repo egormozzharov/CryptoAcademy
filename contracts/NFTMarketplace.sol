@@ -3,6 +3,8 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "./interfaces/IERC721Mintable.sol";
+import "./interfaces/IERC1155Mintable.sol";
 
 contract NftMarketplace is ReentrancyGuard {
 
@@ -60,6 +62,30 @@ contract NftMarketplace is ReentrancyGuard {
         _;
     }
 
+    address private _erc721Address;
+    address private _erc1155Address;
+
+    constructor(address erc721Address, address erc1155Address)
+    {
+        _erc721Address = erc721Address;
+        _erc1155Address = erc1155Address;
+    }
+
+    function createItemForERC721(address recipient, string calldata tokenUrl) 
+        external
+        returns (uint tokenId)
+    {
+        return IERC721Mintable(_erc721Address).mint(recipient, tokenUrl);
+    }
+
+    function createItemForERC1155(address recipient, uint256 tokenId, uint256 amount, bytes memory data)
+        external
+        returns (uint)
+    {
+        IERC1155Mintable(_erc1155Address).mint(recipient, tokenId, amount, data);
+        return tokenId;
+    }
+
     function listItem(address nftAddress, uint256 tokenId, uint256 price)
         external
         notListed(nftAddress, tokenId, msg.sender)
@@ -76,14 +102,6 @@ contract NftMarketplace is ReentrancyGuard {
         emit ItemListed(msg.sender, nftAddress, tokenId, price);
     }
 
-    function cancelListing(address nftAddress, uint256 tokenId)
-        external
-        isOwner(nftAddress, tokenId, msg.sender)
-        isListed(nftAddress, tokenId)
-    {
-        delete (s_listings[nftAddress][tokenId]);
-        emit ItemCanceled(msg.sender, nftAddress, tokenId);
-    }
 
     function buyItem(address nftAddress, uint256 tokenId)
         external
@@ -100,6 +118,15 @@ contract NftMarketplace is ReentrancyGuard {
         delete (s_listings[nftAddress][tokenId]);
         IERC721(nftAddress).safeTransferFrom(listedItem.seller, msg.sender, tokenId);
         emit ItemBought(msg.sender, nftAddress, tokenId, listedItem.price);
+    }
+
+    function cancelListing(address nftAddress, uint256 tokenId)
+        external
+        isOwner(nftAddress, tokenId, msg.sender)
+        isListed(nftAddress, tokenId)
+    {
+        delete (s_listings[nftAddress][tokenId]);
+        emit ItemCanceled(msg.sender, nftAddress, tokenId);
     }
 
     function withdrawProceeds() external {

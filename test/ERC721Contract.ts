@@ -19,6 +19,7 @@ describe("ERC721", function () {
     const contractFactory: ContractFactory = await ethers.getContractFactory("MyNFT", owner);
     tokenContract = (await contractFactory.deploy()) as MyNFT;
     await tokenContract.deployed();
+    await tokenContract.setMinter(await owner.getAddress());
   });
 
   describe("name", function () {
@@ -36,8 +37,8 @@ describe("ERC721", function () {
   describe("mintNFT", function () {
     it("Shoud mintMyNFT successfully", async function () {
       // arrange
-      await tokenContract.mintMyNFT(addr1.address, TokenUri);
-      await tokenContract.mintMyNFT(addr1.address, TokenUri);
+      await tokenContract.mint(addr1.address, TokenUri);
+      await tokenContract.mint(addr1.address, TokenUri);
 
       // assert
       await expect(await tokenContract.owner()).to.be.equal(owner.address);
@@ -49,7 +50,7 @@ describe("ERC721", function () {
 
     it("Shoud transferFrom token owner successfully", async function () {
       // arrange
-      await tokenContract.mintMyNFT(addr1.address, TokenUri);
+      await tokenContract.mint(addr1.address, TokenUri);
       const tokenId = await tokenContract.tokenIds();
       // act
       await expect(await tokenContract.connect(addr1).transferFrom(addr1.address, addr2.address, tokenId))
@@ -58,7 +59,7 @@ describe("ERC721", function () {
 
     it("Shoud transferFrom successfully", async function () {
       // arrange
-      await tokenContract.mintMyNFT(addr1.address, TokenUri);
+      await tokenContract.mint(addr1.address, TokenUri);
       const tokenId = await tokenContract.tokenIds();
 
       // act
