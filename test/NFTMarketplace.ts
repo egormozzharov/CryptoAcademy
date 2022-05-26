@@ -33,63 +33,76 @@ describe("NftMarketplace", function () {
     await erc1150Contract.deployed();
 
     const contractFactoryForNftMarketplace: ContractFactory = await ethers.getContractFactory("NftMarketplace", owner);
-    marketplaceContract = (await contractFactoryForNftMarketplace.deploy(erc721Contract.address, erc1150Contract.address)) as NftMarketplace;
+    marketplaceContract = (await contractFactoryForNftMarketplace
+      .deploy(erc721Contract.address, erc1150Contract.address, erc20Contract.address)) as NftMarketplace;
     await marketplaceContract.deployed();
   });
 
   describe("createItemForERC721", function () {
     it("Shoud transfer successfully", async function () {
-        await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
-        await expect(await marketplaceContract.connect(owner).createItemForERC721(addr1.address, "tokenUrlString"))
+      const tokenId = 1;
+      await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
+
+      await expect(await marketplaceContract.connect(owner).createItemForERC721(addr1.address, "tokenUrlString"))
+        .to.emit(marketplaceContract, "ERC721ItemCreated").withArgs(erc721Contract.address, addr1.address, tokenId);
+      await expect(await erc721Contract.balanceOf(addr1.address)).to.be.equal(1);
+    });
+  });
+
+  describe("createItemForERC1155", function () {
+    it("Shoud transfer successfully", async function () {
+      const tokenId = 1;
+      const amount = 10;
+      await erc1150Contract.connect(owner).setMinter(marketplaceContract.address);
+
+      await expect(await marketplaceContract.connect(owner).createItemForERC1155(addr1.address, tokenId, amount, []))
+        .to.emit(marketplaceContract, "ERC1155ItemCreated").withArgs(erc1150Contract.address, addr1.address, tokenId, amount);
+      await expect(await erc1150Contract.balanceOf(addr1.address, tokenId)).to.be.equal(amount);
     });
   });
 
   describe("listItem", function () {
     it("Shoud list item successfully", async function () {
-        const tokenOwner = addr1;
-        const tokenId = 1;
-        const price = 1;
-        await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
-        await marketplaceContract.connect(owner).createItemForERC721(tokenOwner.address, "tokenUrlString");
-        await erc721Contract.connect(tokenOwner).approve(marketplaceContract.address, tokenId);
-        await expect(await marketplaceContract.connect(tokenOwner).listItem(erc721Contract.address, tokenId, price));
-    });
-  });
-
-  describe("cancelListing", function () {
-    it("Shoud cancel item successfully", async function () {
+      // arrange
       const tokenOwner = addr1;
       const tokenId = 1;
       const price = 1;
       await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
       await marketplaceContract.connect(owner).createItemForERC721(tokenOwner.address, "tokenUrlString");
       await erc721Contract.connect(tokenOwner).approve(marketplaceContract.address, tokenId);
-      await marketplaceContract.connect(tokenOwner).listItem(erc721Contract.address, tokenId, price);
-      await expect(await marketplaceContract.connect(tokenOwner).cancelListing(erc721Contract.address, tokenId));
+
+      await expect(await marketplaceContract.connect(tokenOwner).listItem(erc721Contract.address, tokenId, price))
+        .to.emit(marketplaceContract, "ItemListed").withArgs(erc721Contract.address, tokenOwner.address, tokenId, price);
+      const listing: NftMarketplace.ListingStruct = await marketplaceContract.getListing(erc721Contract.address, tokenId);
+      expect(listing.price).to.equal(price);
+      expect(listing.seller).to.equal(tokenOwner.address);
+
+      await expect(await marketplaceContract.connect(tokenOwner).cancelListing(erc721Contract.address, tokenId))
+        .to.emit(marketplaceContract, "ItemCanceled").withArgs(erc721Contract.address, tokenOwner.address, tokenId);
+      const listingAfterCansel: NftMarketplace.ListingStruct = await marketplaceContract.getListing(erc721Contract.address, tokenId);
+      expect(listingAfterCansel.price).to.equal(0);
+      expect(listingAfterCansel.seller).to.equal(ethers.constants.AddressZero);
     });
   });
 
   describe("buyItem", function () {
     it("Shoud buy item successfully", async function () {
-      // const tokenOwner = addr1;
-      // const tokenId = 1;
-      // const price = 1;
-      // await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
-      // await marketplaceContract.connect(owner).createItemForERC721(tokenOwner.address, "tokenUrlString");
-      // await erc721Contract.connect(tokenOwner).approve(marketplaceContract.address, tokenId);
-      // await marketplaceContract.connect(tokenOwner).listItem(erc721Contract.address, tokenId, price);
-      // await expect(await marketplaceContract.connect(tokenOwner).cancelListing(erc721Contract.address, tokenId));
-  });
+      // arrange
+      const tokenOwner = addr1;
+      const buyer = addr2;
+      const tokenId = 1;
+      const price = 1;
+      await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
+      await marketplaceContract.connect(owner).createItemForERC721(tokenOwner.address, "tokenUrlString");
+      await erc721Contract.connect(tokenOwner).approve(marketplaceContract.address, tokenId);
+      await marketplaceContract.connect(tokenOwner).listItem(erc721Contract.address, tokenId, price);
+      await erc20Contract.mint(buyer.address, price);
+      await erc20Contract.connect(buyer).approve(marketplaceContract.address, price);
 
-  describe("withdrawProceeds", function () {
-    it("Shoud withdraw successfully", async function () {
-      // const tokenOwner = addr1;
-      // const tokenId = 1;
-      // const price = 1;
-      // await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
-      // await marketplaceContract.connect(owner).createItemForERC721(tokenOwner.address, "tokenUrlString");
-      // await erc721Contract.connect(tokenOwner).approve(marketplaceContract.address, tokenId);
-      // await marketplaceContract.connect(tokenOwner).listItem(erc721Contract.address, tokenId, price);
-      // await expect(await marketplaceContract.connect(tokenOwner).cancelListing(erc721Contract.address, tokenId));
+      await expect(await marketplaceContract.connect(buyer).buyItem(erc721Contract.address, tokenId, price))
+        .to.emit(marketplaceContract, "ItemBought").withArgs(erc721Contract.address, buyer.address, tokenId, price);
+      await expect(await erc20Contract.balanceOf(buyer.address)).to.eq(0);
+      await expect(await erc20Contract.balanceOf(tokenOwner.address)).to.eq(price);
     });
+  });
 });
