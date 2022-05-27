@@ -42,10 +42,11 @@ describe("NftMarketplace", function () {
   describe("createItemForERC721", function () {
     it("Shoud transfer successfully", async function () {
       const tokenId = 1;
+      const tokenUrl = "tokenUrlString";
       await erc721Contract.connect(owner).setMinter(marketplaceContract.address);
 
-      await expect(await marketplaceContract.connect(owner).createItemForERC721(addr1.address, "tokenUrlString"))
-        .to.emit(marketplaceContract, "ERC721ItemCreated").withArgs(erc721Contract.address, addr1.address, tokenId);
+      await expect(await marketplaceContract.connect(owner).createItemForERC721(addr1.address, tokenUrl))
+        .to.emit(marketplaceContract, "ERC721ItemCreated").withArgs(erc721Contract.address, addr1.address, tokenId, tokenUrl);
       await expect(await erc721Contract.balanceOf(addr1.address)).to.be.equal(1);
     });
   });

@@ -8,7 +8,6 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "./interfaces/IERC721Mintable.sol";
 import "./interfaces/IERC1155Mintable.sol";
 import "./interfaces/IERC20.sol";
-import "hardhat/console.sol";
 
 contract NftMarketplace is ERC1155Holder, ERC721Holder {
     error PriceNotMet(address contractAddress, uint tokenId, uint price);
@@ -21,12 +20,12 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
     error AuctionIsNotExists(uint auctionId);
     error YourBidPriceIsLessThanCurrentBidPrice(uint auctionId);
 
-    event ERC721ItemCreated(address contractAddress, address ownerAddress, uint tokenId, string url);
-    event ERC1155ItemCreated(address contractAddress, address ownerAddress, uint tokenId, uint amount, string url);
-    event ItemListed(uint listingId, address contractAddress, address seller, uint tokenId, uint price, uint amount);
-    event ItemCanceled(uint listingId, address contractAddress, address seller, uint tokenId);
-    event ItemBought(address contractAddress, address buyer, uint tokenId, uint price);
-    event ItemListedOnAuction(uint auctionId, uint tokenId, uint amountOfTokens, uint minTotalPrice);
+    event ERC721ItemCreated(address indexed contractAddress, address ownerAddress, uint indexed tokenId, string url);
+    event ERC1155ItemCreated(address indexed contractAddress, address ownerAddress, uint indexed tokenId, uint amount, string url);
+    event ItemListed(uint listingId, address indexed contractAddress, address seller, uint indexed tokenId, uint price, uint amount);
+    event ItemCanceled(uint listingId, address indexed contractAddress, address seller, uint indexed tokenId);
+    event ItemBought(address indexed contractAddress, address buyer, uint indexed tokenId, uint price);
+    event ItemListedOnAuction(address indexed contractAddress, uint auctionId, uint indexed tokenId, uint amountOfTokens, uint minTotalPrice);
     event AuctionFinished(uint auctionId);
 
     struct Listing {
@@ -56,37 +55,28 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
     modifier isListed(uint listingId) 
     {
         Listing memory listing = _listings[listingId];
-        if (!listing.hasValue) {
-            revert NotListed(listing.contractAddress, listing.tokenId);
-        }
+        if (!listing.hasValue) revert NotListed(listing.contractAddress, listing.tokenId);
         _;
     }
 
     modifier auctionExists(uint auctionId) 
     {
         Auction memory auction = _auctions[auctionId];
-        if (!auction.hasValue)
-        {
-            revert AuctionIsNotExists(auctionId);
-        }
+        if (!auction.hasValue) revert AuctionIsNotExists(auctionId);
         _;
     }
 
     modifier isNotFinishedAuction(uint auctionId) 
     {
         Auction memory auction = _auctions[auctionId];
-        if (auction.isFinished) {
-            revert AuctionIsFinished(auctionId);
-        }
+        if (auction.isFinished) revert AuctionIsFinished(auctionId);
         _;
     }
 
     modifier isListingOwner(uint listingId)
     {
         Listing memory listing = _listings[listingId];
-        if (listing.seller != msg.sender) {
-            revert NotOwner();
-        }
+        if (listing.seller != msg.sender) revert NotOwner();
         _;
     }
 
@@ -103,25 +93,25 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
     mapping(uint => Listing) private _listings;
     mapping(uint => Auction) private _auctions;
 
-    IERC721 private _erc721Contract;
-    IERC1155 private _erc1155Contract;
-    IERC20 private _erc20Contract;
+    IERC721 private immutable _erc721Contract;
+    IERC1155 private immutable _erc1155Contract;
+    IERC20 private immutable _erc20Contract;
 
     uint private _auctionIdCounter;
     uint private _listingIdCounter;
-    address private _erc721Address;
-    address private _erc1155Address;
-    address private _paymentTokenAddress;
-    uint private _auctionDurationTime;
+    address private immutable _erc721Address;
+    address private immutable _erc1155Address;
+    address private immutable _paymentTokenAddress;
+    uint private immutable _auctionDurationTime;
 
     constructor(address erc721Address, address erc1155Address, address paymentTokenAddress, uint auctionDurationTime) {
         _erc721Address = erc721Address;
         _erc1155Address = erc1155Address;
         _paymentTokenAddress = paymentTokenAddress;
         _auctionDurationTime = auctionDurationTime;
-        _erc1155Contract = IERC1155(_erc1155Address);
-        _erc721Contract = IERC721(_erc721Address);
-        _erc20Contract = IERC20(_paymentTokenAddress);
+        _erc1155Contract = IERC1155(erc1155Address);
+        _erc721Contract = IERC721(erc721Address);
+        _erc20Contract = IERC20(paymentTokenAddress);
     }
 
     function createItemForERC721(address recipient, string calldata tokenUrl) 
@@ -134,7 +124,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
     function createItemForERC1155(address recipient, uint tokenId, uint amount, string calldata url)
         external
     {
-        IERC1155Mintable(_erc1155Address).mint(recipient, tokenId, amount, url);
+        IERC1155Mintable(_erc1155Address).mint(recipient, amount, url);
         emit ERC1155ItemCreated(_erc1155Address, recipient, tokenId, amount, url);
     }
 
@@ -142,12 +132,8 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         external
         returns (uint)
     {
-        if (price <= 0) {
-            revert PriceMustBeAboveZero();
-        }
-        if (_erc721Contract.getApproved(tokenId) != address(this)) {
-            revert NotApprovedForMarketplace();
-        }
+        if (price <= 0) revert PriceMustBeAboveZero();
+        if (_erc721Contract.getApproved(tokenId) != address(this)) revert NotApprovedForMarketplace();
 
         _listingIdCounter++;
         _listings[_listingIdCounter] = Listing(_listingIdCounter, _erc721Address, tokenId, price, msg.sender, 1, true);
@@ -161,13 +147,8 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         external
         returns (uint)
     {
-        if (price <= 0) {
-            revert PriceMustBeAboveZero();
-        }
-        if (!_erc1155Contract.isApprovedForAll(msg.sender, address(this)))
-        {
-            revert NotApprovedForMarketplace();
-        }
+        if (price <= 0) revert PriceMustBeAboveZero();
+        if (!_erc1155Contract.isApprovedForAll(msg.sender, address(this))) revert NotApprovedForMarketplace();
         _listingIdCounter++;
         _listings[_listingIdCounter] = Listing(_listingIdCounter, _erc1155Address, tokenId, price, msg.sender, amount, true);
         
@@ -181,9 +162,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         isListed(listingId)
     {
         Listing memory listing = _listings[listingId];
-        if (price < listing.price) {
-            revert PriceNotMet(_erc721Address, listing.tokenId, listing.price);
-        }
+        if (price < listing.price) revert PriceNotMet(_erc721Address, listing.tokenId, listing.price);
 
         delete (_listings[listingId]);
 
@@ -242,7 +221,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
             true
         );
         _auctions[_auctionIdCounter] = auction;
-        emit ItemListedOnAuction(_auctionIdCounter, tokenId, 1, minTotalPrice);
+        emit ItemListedOnAuction(_erc721Address, _auctionIdCounter, tokenId, 1, minTotalPrice);
         return _auctionIdCounter;
     }
 
@@ -272,7 +251,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
             true
         );
         _auctions[_auctionIdCounter] = auction;
-        emit ItemListedOnAuction(_auctionIdCounter, tokenId, amountOfTokens, minTotalPrice);
+        emit ItemListedOnAuction(_erc1155Address, _auctionIdCounter, tokenId, amountOfTokens, minTotalPrice);
         return _auctionIdCounter;
     }
 
@@ -282,17 +261,14 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         isNotFinishedAuction(auctionId)
     {
         Auction memory auction = _auctions[auctionId];
-        if (auction.lastPrice > totalPrice) {
-            revert YourBidPriceIsLessThanCurrentBidPrice(auctionId);
-        }
+        if (auction.lastPrice > totalPrice) revert YourBidPriceIsLessThanCurrentBidPrice(auctionId);
         _auctions[auctionId].lastPrice = totalPrice;
         _auctions[auctionId].amountOfBids += 1;
         _auctions[auctionId].lastBidder = msg.sender;
         
         _erc20Contract.transferFrom(msg.sender, address(this), totalPrice);
-        if (auction.amountOfBids > 0) {
+        if (auction.amountOfBids > 0)
             _erc20Contract.transfer(auction.lastBidder, auction.lastPrice);
-        }
     }
 
     function finishAuction(uint auctionId)
@@ -319,13 +295,10 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         }
         else 
         {
-            if (auction.contractAddress == _erc721Address) {
+            if (auction.contractAddress == _erc721Address) 
                 _erc721Contract.safeTransferFrom(address(this), auction.seller, auction.tokenId);
-            }
             else 
-            {
                 _erc1155Contract.safeTransferFrom(address(this), auction.seller, auction.tokenId, auction.amountOfTokens, "");
-            }
             _erc20Contract.transferFrom(address(this), auction.lastBidder, auction.lastPrice);
         }
         _auctions[auctionId].isFinished = true;

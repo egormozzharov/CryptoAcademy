@@ -10,10 +10,10 @@ import "./interfaces/IERC721Mintable.sol";
 contract MyNFT is ERC721URIStorage, Ownable, IERC721Mintable {
     using Counters for Counters.Counter;
     Counters.Counter public tokenIds;
-    address private _minter;
+    address public minter;
 
     modifier onlyMinter {
-        require(msg.sender == _minter, "Only minter can mint");
+        require(msg.sender == minter, "Only minter can mint");
         _;
     }
 
@@ -26,7 +26,6 @@ contract MyNFT is ERC721URIStorage, Ownable, IERC721Mintable {
         returns (uint256)
     {
         tokenIds.increment();
-
         uint256 newItemId = tokenIds.current();
         _mint(recipient, newItemId);
         _setTokenURI(newItemId, tokenURI);
@@ -34,18 +33,10 @@ contract MyNFT is ERC721URIStorage, Ownable, IERC721Mintable {
         return newItemId;
     }
 
-    function setMinter(address minter) 
+    function setMinter(address minterAddress) 
         public 
         onlyOwner
     {
-        _minter = minter;
-    }
-
-    function getMinter() 
-        public 
-        view
-        returns (address)
-    {
-        return _minter;
+        minter = minterAddress;
     }
 }
