@@ -11,7 +11,7 @@ import "./interfaces/IERC1155Mintable.sol";
 import "./interfaces/IERC20.sol";
 import "hardhat/console.sol";
 
-contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
+contract NftMarketplace is ERC1155Holder, ERC721Holder {
     error PriceNotMet(address contractAddress, uint tokenId, uint price);
     error NotListed(address contractAddress, uint tokenId);
     error AlreadyListed(address contractAddress, uint tokenId);
@@ -180,7 +180,6 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
     function buyItem(uint listingId, uint price)
         external
         isListed(listingId)
-        nonReentrant
     {
         Listing memory listing = _listings[listingId];
         if (price < listing.price) {
