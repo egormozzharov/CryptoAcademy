@@ -6,6 +6,7 @@ import { ERC1155Contract } from '../typechain-types/contracts/ERC1155.sol/ERC115
 import { MyNFT } from "../typechain-types/contracts/ERC721.sol/MyNFT";
 import { ERC20Basic } from '../typechain-types/ERC20Basic';
 import { NftMarketplace } from '../typechain-types/contracts/NFTMarketplace.sol/NftMarketplace';
+import { blockTimestampTools } from "../scripts/tools";
 
 describe("NftMarketplace", function () {
 
@@ -147,6 +148,39 @@ describe("NftMarketplace", function () {
         .to.emit(marketplaceContract, "ItemBought").withArgs(erc1150Contract.address, buyer.address, tokenId, price);
       await expect(await erc20Contract.balanceOf(buyer.address)).to.eq(0);
       await expect(await erc20Contract.balanceOf(tokenOwner.address)).to.eq(price);
+    });
+  });
+
+  describe("AuctionERC1155", function () {
+    it("Shoud list item on auction, bid and finish successfully", async function () {
+      const tokenOwner = addr1;
+      const bidder = addr2;
+      const tokenId = 1;
+      const auctionId = 1;
+      const amount = 10;
+      const minPrice = 5;
+      const erc20TokensToMint = 20;
+      await erc1150Contract.connect(owner).setMinter(marketplaceContract.address);
+      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, []);
+      await erc1150Contract.connect(tokenOwner).setApprovalForAll(marketplaceContract.address, true);
+
+      await expect(await marketplaceContract.connect(tokenOwner).listItemOnAuctionERC1155(tokenId, amount, minPrice))
+      const auction: NftMarketplace.AuctionStruct = await marketplaceContract.getAuction(auctionId);
+      expect(auction.hasValue).to.equal(true);
+
+      erc20Contract.mint(bidder.address, erc20TokensToMint);
+      await erc20Contract.connect(bidder).approve(marketplaceContract.address, erc20TokensToMint);
+      await marketplaceContract.connect(bidder).makeBid(auctionId, 6);
+      await marketplaceContract.connect(bidder).makeBid(auctionId, 7);
+
+      await blockTimestampTools.forwardTimestamp(3600);
+      await expect(await marketplaceContract.connect(tokenOwner).finishAuction(auctionId))
+        .to.emit(marketplaceContract, "AuctionFinished").withArgs(auctionId);
+      const auctionAfterFinish: NftMarketplace.AuctionStruct = await marketplaceContract.getAuction(auctionId);
+      await expect(auctionAfterFinish.isFinished).to.equal(true);
+      await expect(await erc20Contract.balanceOf(bidder.address)).to.eq(erc20TokensToMint - 7);
+      await expect(await erc20Contract.balanceOf(tokenOwner.address)).to.eq(7);
+      await expect(await erc1150Contract.balanceOf(bidder.address, tokenId)).to.eq(amount);
     });
   });
 });

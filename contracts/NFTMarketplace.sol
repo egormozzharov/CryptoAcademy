@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
 import "./interfaces/IERC721Mintable.sol";
 import "./interfaces/IERC1155Mintable.sol";
 import "./interfaces/IERC20.sol";
+import "hardhat/console.sol";
 
 contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
     error PriceNotMet(address contractAddress, uint tokenId, uint price);
@@ -26,6 +27,8 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
     event ItemListed(uint listingId, address contractAddress, address seller, uint tokenId, uint price, uint amount);
     event ItemCanceled(uint listingId, address contractAddress, address seller, uint tokenId);
     event ItemBought(address contractAddress, address buyer, uint tokenId, uint price);
+    event ItemListedOnAuction(uint auctionId, uint tokenId, uint amountOfTokens, uint minTotalPrice);
+    event AuctionFinished(uint auctionId);
 
     struct Listing {
         uint listingId;
@@ -213,6 +216,14 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
         return _listings[listingId];
     }
 
+    function getAuction(uint auctionId)
+        external
+        view
+        returns (Auction memory)
+    {
+        return _auctions[auctionId];
+    }
+
     function listItemOnAuctionERC721(uint tokenId, uint minTotalPrice)
         external
         returns (uint)
@@ -233,6 +244,7 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
             true
         );
         _auctions[_auctionIdCounter] = auction;
+        emit ItemListedOnAuction(_auctionIdCounter, tokenId, 1, minTotalPrice);
         return _auctionIdCounter;
     }
 
@@ -262,6 +274,7 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
             true
         );
         _auctions[_auctionIdCounter] = auction;
+        emit ItemListedOnAuction(_auctionIdCounter, tokenId, amountOfTokens, minTotalPrice);
         return _auctionIdCounter;
     }
 
@@ -280,7 +293,7 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
         
         _erc20Contract.transferFrom(msg.sender, address(this), totalPrice);
         if (auction.amountOfBids > 0) {
-            _erc20Contract.transferFrom(address(this), auction.lastBidder, auction.lastPrice);
+            _erc20Contract.transfer(auction.lastBidder, auction.lastPrice);
         }
     }
 
@@ -304,7 +317,7 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
                     ""
                 );
             }
-            _erc20Contract.transferFrom(address(this), auction.seller, auction.lastPrice);
+            _erc20Contract.transfer(auction.seller, auction.lastPrice);
         }
         else 
         {
@@ -317,6 +330,8 @@ contract NftMarketplace is ReentrancyGuard, ERC1155Holder, ERC721Holder {
             }
             _erc20Contract.transferFrom(address(this), auction.lastBidder, auction.lastPrice);
         }
+        _auctions[auctionId].isFinished = true;
+        emit AuctionFinished(auctionId);
     }
 
     function auctionConditionsAreMet(uint auctionId)
