@@ -54,10 +54,11 @@ describe("NftMarketplace", function () {
     it("Shoud transfer successfully", async function () {
       const tokenId = 1;
       const amount = 10;
+      const url = "tokenUrlString";
       await erc1150Contract.connect(owner).setMinter(marketplaceContract.address);
 
-      await expect(await marketplaceContract.connect(owner).createItemForERC1155(addr1.address, tokenId, amount, []))
-        .to.emit(marketplaceContract, "ERC1155ItemCreated").withArgs(erc1150Contract.address, addr1.address, tokenId, amount);
+      await expect(await marketplaceContract.connect(owner).createItemForERC1155(addr1.address, tokenId, amount, url))
+        .to.emit(marketplaceContract, "ERC1155ItemCreated").withArgs(erc1150Contract.address, addr1.address, tokenId, amount, url);
       await expect(await erc1150Contract.balanceOf(addr1.address, tokenId)).to.be.equal(amount);
     });
   });
@@ -92,8 +93,9 @@ describe("NftMarketplace", function () {
       const price = 1;
       const listingId = 1;
       const amount = 10;
+      const tokenUrl = "tokenUrlString";
       await erc1150Contract.connect(owner).setMinter(marketplaceContract.address);
-      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, []);
+      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, tokenUrl);
       await erc1150Contract.connect(tokenOwner).setApprovalForAll(marketplaceContract.address, true);
 
       await expect(await marketplaceContract.connect(tokenOwner).listItemERC1155(tokenId, amount, price))
@@ -137,8 +139,9 @@ describe("NftMarketplace", function () {
       const tokenId = 1;
       const price = 1;
       const amount = 10;
+      const tokenUrl = "tokenUrlString";
       await erc1150Contract.connect(owner).setMinter(marketplaceContract.address);
-      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, []);
+      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, tokenUrl);
       await erc1150Contract.connect(tokenOwner).setApprovalForAll(marketplaceContract.address, true);
       await marketplaceContract.connect(tokenOwner).listItemERC1155(tokenId, amount, price);
       await erc20Contract.mint(buyer.address, price);
@@ -160,8 +163,9 @@ describe("NftMarketplace", function () {
       const amount = 10;
       const minPrice = 5;
       const erc20TokensToMint = 20;
+      const tokenUrl = "tokenUrlString";
       await erc1150Contract.connect(owner).setMinter(marketplaceContract.address);
-      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, []);
+      await marketplaceContract.connect(owner).createItemForERC1155(tokenOwner.address, tokenId, amount, tokenUrl);
       await erc1150Contract.connect(tokenOwner).setApprovalForAll(marketplaceContract.address, true);
 
       await expect(await marketplaceContract.connect(tokenOwner).listItemOnAuctionERC1155(tokenId, amount, minPrice))

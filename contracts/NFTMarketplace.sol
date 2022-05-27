@@ -21,8 +21,8 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
     error AuctionIsNotExists(uint auctionId);
     error YourBidPriceIsLessThanCurrentBidPrice(uint auctionId);
 
-    event ERC721ItemCreated(address contractAddress, address ownerAddress, uint tokenId);
-    event ERC1155ItemCreated(address contractAddress, address ownerAddress, uint tokenId, uint amount);
+    event ERC721ItemCreated(address contractAddress, address ownerAddress, uint tokenId, string url);
+    event ERC1155ItemCreated(address contractAddress, address ownerAddress, uint tokenId, uint amount, string url);
     event ItemListed(uint listingId, address contractAddress, address seller, uint tokenId, uint price, uint amount);
     event ItemCanceled(uint listingId, address contractAddress, address seller, uint tokenId);
     event ItemBought(address contractAddress, address buyer, uint tokenId, uint price);
@@ -128,14 +128,14 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         external
     {
         uint tokenId = IERC721Mintable(_erc721Address).mint(recipient, tokenUrl);
-        emit ERC721ItemCreated(_erc721Address, recipient, tokenId);
+        emit ERC721ItemCreated(_erc721Address, recipient, tokenId, tokenUrl);
     }
 
-    function createItemForERC1155(address recipient, uint tokenId, uint amount, bytes memory data)
+    function createItemForERC1155(address recipient, uint tokenId, uint amount, string calldata url)
         external
     {
-        IERC1155Mintable(_erc1155Address).mint(recipient, tokenId, amount, data);
-        emit ERC1155ItemCreated(_erc1155Address, recipient, tokenId, amount);
+        IERC1155Mintable(_erc1155Address).mint(recipient, tokenId, amount, url);
+        emit ERC1155ItemCreated(_erc1155Address, recipient, tokenId, amount, url);
     }
 
     function listItemERC721(uint tokenId, uint price)
