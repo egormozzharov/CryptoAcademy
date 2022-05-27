@@ -114,21 +114,21 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         _erc20Contract = IERC20(paymentTokenAddress);
     }
 
-    function createItemForERC721(address recipient, string calldata tokenUrl) 
+    function createItem(address recipient, string calldata tokenUrl) 
         external
     {
         uint tokenId = IERC721Mintable(_erc721Address).mint(recipient, tokenUrl);
         emit ERC721ItemCreated(_erc721Address, recipient, tokenId, tokenUrl);
     }
 
-    function createItemForERC1155(address recipient, uint tokenId, uint amount, string calldata url)
+    function createItem(address recipient, uint tokenId, uint amount, string calldata url)
         external
     {
         IERC1155Mintable(_erc1155Address).mint(recipient, amount, url);
         emit ERC1155ItemCreated(_erc1155Address, recipient, tokenId, amount, url);
     }
 
-    function listItemERC721(uint tokenId, uint price)
+    function listItem(uint tokenId, uint price)
         external
         returns (uint)
     {
@@ -143,7 +143,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         return _listingIdCounter;
     }
 
-    function listItemERC1155(uint tokenId, uint amount, uint price)
+    function listItem(uint tokenId, uint amount, uint price)
         external
         returns (uint)
     {
@@ -201,7 +201,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         return _auctions[auctionId];
     }
 
-    function listItemOnAuctionERC721(uint tokenId, uint minTotalPrice)
+    function listItemOnAuction(uint tokenId, uint minTotalPrice)
         external
         returns (uint)
     {
@@ -225,7 +225,7 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         return _auctionIdCounter;
     }
 
-    function listItemOnAuctionERC1155(uint tokenId, uint amountOfTokens, uint minTotalPrice)
+    function listItemOnAuction(uint tokenId, uint amountOfTokens, uint minTotalPrice)
         external
         returns (uint)
     {
