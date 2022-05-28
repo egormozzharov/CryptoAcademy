@@ -11,98 +11,98 @@ export function marketplaceTasks() {
     const CONTRACT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_NFT_MARKETPLACE_CONTRACT_ADDRESS || "";
     const CONTRACT_NAME = "NftMarketplace";
 
-    task("createItem", "Create item")
+    task("createitem", "Create item")
     .addParam("recipient", "string")
-    .addParam("tokenUrl", "string")
+    .addParam("tokenurl", "string")
     .addOptionalParam("amount", "number")
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
         if (taskArgs.amount != 0) {
-            await contract.connect(owner)['createItem(address,uint256,string)'](taskArgs.recipient, taskArgs.amount, taskArgs.tokenUrl);
+            await contract.connect(owner)['createItem(address,uint256,string)'](taskArgs.recipient, taskArgs.amount, taskArgs.tokenurl);
         }
         else {
-            await contract.connect(owner)['createItem(address,string)'](taskArgs.recipient, taskArgs.tokenUrl);
+            await contract.connect(owner)['createItem(address,string)'](taskArgs.recipient, taskArgs.tokenurl);
         }
     });
 
-    task("listItem", "List item")
-    .addParam("tokenId", "number")
-    .addParam("price", "number")
-    .addOptionalParam("amount", "number")
-    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-        const [owner] = await hre.ethers.getSigners();
-        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        if (taskArgs.amount != 0) {
-            await contract.connect(owner)['listItem(uint256,uint256,uint256)'](taskArgs.tokenId, taskArgs.amount, taskArgs.price);
-        }
-        else {
-            await contract.connect(owner)['listItem(uint256,uint256)'](taskArgs.tokenId, taskArgs.price);
-        }
-    });
-
-    task("cancelListing", "Cancel listing")
-    .addParam("listingId", "number")
-    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-        const [owner] = await hre.ethers.getSigners();
-        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).cancelListing(taskArgs.listingId);
-    });
-
-    task("buyItem", "Buy item")
-    .addParam("listingId", "number")
-    .addParam("price", "number")
-    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-        const [owner] = await hre.ethers.getSigners();
-        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).buyItem(taskArgs.listingId, taskArgs.price);
-    });
-
-    task("getListing", "Get listing")
-    .addParam("listingId", "number")
-    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
-        const [owner] = await hre.ethers.getSigners();
-        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).getListing(taskArgs.listingId);
-    });
-
-    task("listItemOnAuction", "List item on auction")
-    .addParam("tokenId", "number")
+    task("listitem", "List item")
+    .addParam("tokenid", "number")
     .addParam("price", "number")
     .addOptionalParam("amount", "number")
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
         if (taskArgs.amount != 0) {
-            await contract.connect(owner)['listItemOnAuction(uint256,uint256,uint256)'](taskArgs.tokenId, taskArgs.amount, taskArgs.price);
+            await contract.connect(owner)['listItem(uint256,uint256,uint256)'](taskArgs.tokenid, taskArgs.amount, taskArgs.price);
         }
         else {
-            await contract.connect(owner)['listItemOnAuction(uint256,uint256)'](taskArgs.tokenId, taskArgs.price);
+            await contract.connect(owner)['listItem(uint256,uint256)'](taskArgs.tokenid, taskArgs.price);
         }
     });
 
-    task("makeBid", "Make bid")
-    .addParam("auctionId", "number")
+    task("cancellisting", "Cancel listing")
+    .addParam("listingid", "number")
+    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+        const [owner] = await hre.ethers.getSigners();
+        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
+        await contract.connect(owner).cancelListing(taskArgs.listingid);
+    });
+
+    task("buyitem", "Buy item")
+    .addParam("listingid", "number")
     .addParam("price", "number")
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).makeBid(taskArgs.auctionId, taskArgs.price);
+        await contract.connect(owner).buyItem(taskArgs.listingid, taskArgs.price);
     });
 
-    task("finishAuction", "Finish auction")
-    .addParam("auctionId", "number")
+    task("getlisting", "Get listing")
+    .addParam("listingid", "number")
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).finishAuction(taskArgs.auctionId);
+        await contract.connect(owner).getListing(taskArgs.listingid);
     });
 
-    task("getAuction", "Get auction")
-    .addParam("auctionId", "number")
+    task("listitemonauction", "List item on auction")
+    .addParam("tokenid", "number")
+    .addParam("price", "number")
+    .addOptionalParam("amount", "number")
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).getAuction(taskArgs.auctionId);
+        if (taskArgs.amount != 0) {
+            await contract.connect(owner)['listItemOnAuction(uint256,uint256,uint256)'](taskArgs.tokenid, taskArgs.amount, taskArgs.price);
+        }
+        else {
+            await contract.connect(owner)['listItemOnAuction(uint256,uint256)'](taskArgs.tokenid, taskArgs.price);
+        }
+    });
+
+    task("makebid", "Make bid")
+    .addParam("auctionid", "number")
+    .addParam("price", "number")
+    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+        const [owner] = await hre.ethers.getSigners();
+        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
+        await contract.connect(owner).makeBid(taskArgs.auctionid, taskArgs.price);
+    });
+
+    task("finishauction", "Finish auction")
+    .addParam("auctionid", "number")
+    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+        const [owner] = await hre.ethers.getSigners();
+        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
+        await contract.connect(owner).finishAuction(taskArgs.auctionid);
+    });
+
+    task("getauction", "Get auction")
+    .addParam("auctionid", "number")
+    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+        const [owner] = await hre.ethers.getSigners();
+        const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
+        await contract.connect(owner).getAuction(taskArgs.auctionid);
     });
 }
