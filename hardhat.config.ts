@@ -8,13 +8,15 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import { erc20BasicTasks } from './tasks/ERC20BasicTasks';
 import { commonTasks } from './tasks/CommonTasks';
-import { stakingTasks } from './tasks/StakingTasks';
+import { erc721Tasks } from './tasks/ERC721Tasks';
+import { erc1155Tasks } from './tasks/ERC1155Tasks';
 
 dotenv.config();
 
 commonTasks();
 erc20BasicTasks();
-stakingTasks();
+erc721Tasks();
+erc1155Tasks();
 
 const config: HardhatUserConfig = {
   solidity: "0.8.4",
