@@ -121,10 +121,10 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
         emit ERC721ItemCreated(_erc721Address, recipient, tokenId, tokenUrl);
     }
 
-    function createItem(address recipient, uint tokenId, uint amount, string calldata url)
+    function createItem(address recipient, uint amount, string calldata url)
         external
     {
-        IERC1155Mintable(_erc1155Address).mint(recipient, amount, url);
+        uint tokenId = IERC1155Mintable(_erc1155Address).mint(recipient, amount, url);
         emit ERC1155ItemCreated(_erc1155Address, recipient, tokenId, amount, url);
     }
 
