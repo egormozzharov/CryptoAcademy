@@ -63,7 +63,7 @@ export function marketplaceTasks() {
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).getListing(taskArgs.listingid);
+        await contract.connect(owner).listings(taskArgs.listingid);
     });
 
     task("listitemonauction", "List item on auction")
@@ -103,6 +103,6 @@ export function marketplaceTasks() {
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt(CONTRACT_NAME, CONTRACT_ADDRESS)) as NftMarketplace;
-        await contract.connect(owner).getAuction(taskArgs.auctionid);
+        await contract.connect(owner).auctions(taskArgs.auctionId);
     });
 }

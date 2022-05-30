@@ -63,22 +63,13 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
     error PriceMustBeAboveZero();
     error AuctionIsFinished(uint auctionId);
     error AuctionIsNotExists(uint auctionId);
+    error AuctionDurationIsNotOverYet(uint auctionId);
     error YourBidPriceIsLessThanCurrentBidPrice(uint auctionId);
 
     modifier isListingOwner(uint listingId)
     {
         Listing memory listing = listings[listingId];
         if (listing.seller != msg.sender) revert NotOwner();
-        _;
-    }
-
-    modifier auctionCanBeFinished(uint auctionId)
-    {
-        Auction memory auction = auctions[auctionId];
-        require(
-            block.timestamp >= auction.startTime + _auctionDurationTime,
-            "Auction duration is not over yet"
-        );
         _;
     }
 
@@ -225,9 +216,9 @@ contract NftMarketplace is ERC1155Holder, ERC721Holder {
 
     function finishAuction(uint auctionId)
         external
-        auctionCanBeFinished(auctionId)
     {
         Auction memory auction = auctions[auctionId];
+        if (block.timestamp < auction.startTime + _auctionDurationTime) revert AuctionDurationIsNotOverYet(auctionId);
         if (!auction.hasValue) revert AuctionIsNotExists(auctionId);
         if (auction.isFinished) revert AuctionIsFinished(auctionId);
         if (auctionConditionsAreMet(auctionId))
