@@ -1,15 +1,13 @@
 // SPDX-License-Identifier: MIT
+import "./interfaces/IERC20.sol";
 
 pragma solidity ^0.8.0;
 
-contract ERC20Basic {
+contract ERC20Basic is IERC20Burnable, IERC20Mintable, IERC20 {
 
-    event Transfer(address indexed from, address indexed to, uint256 value);
-    event Approval(address indexed owner, address indexed spender, uint256 value);
-
-    string public constant name = "ERC20Basic";
-    string public constant symbol = "ERC";
-    uint8 public constant decimals = 2;
+    string override public constant name = "ERC20Basic";
+    string override public constant symbol = "ERC";
+    uint8 override public constant decimals = 2;
     
     address public immutable _owner;
 
@@ -28,15 +26,15 @@ contract ERC20Basic {
         balances[msg.sender] = totalSupply_;
     }
 
-    function totalSupply() public view returns (uint256) {
+    function totalSupply() public override view returns (uint256) {
         return totalSupply_;
     }
 
-    function balanceOf(address tokenOwner) public view returns (uint256) {
+    function balanceOf(address tokenOwner) public override view returns (uint256) {
         return balances[tokenOwner];
     }
 
-    function transfer(address receiver, uint256 numTokens) public returns (bool) {
+    function transfer(address receiver, uint256 numTokens) public override returns (bool) {
         require(receiver != address(0), "ERC20: transfer to the zero address is not allowed");
         require(numTokens <= balances[msg.sender], "ERC20: transfer amount exceeds balance");
         balances[msg.sender] = balances[msg.sender] - numTokens;
@@ -45,18 +43,18 @@ contract ERC20Basic {
         return true;
     }
 
-    function approve(address to, uint256 numTokens) public returns (bool) {
+    function approve(address to, uint256 numTokens) public override returns (bool) {
         require(to != address(0), "ERC20: approve to the zero address is not allowed");
         allowed[msg.sender][to] = numTokens;
         emit Approval(msg.sender, to, numTokens);
         return true;
     }
 
-    function allowance(address owner, address delegate) public view returns (uint) {
+    function allowance(address owner, address delegate) public view override returns (uint) {
         return allowed[owner][delegate];
     }
 
-    function transferFrom(address from, address to, uint256 numTokens) public returns (bool) {
+    function transferFrom(address from, address to, uint256 numTokens) public override returns (bool) {
         require(to != address(0), "ERC20: transfer to the zero address is not allowed");
         require(numTokens <= balances[from], "ERC20: transfer amount exceeds balance");
         require(numTokens <= allowed[from][msg.sender], "ERC20: transfer amount exceeds allowance");
@@ -68,7 +66,7 @@ contract ERC20Basic {
         return true;
     }
 
-    function burn(address account, uint256 amount) public onlyOwner returns (bool) {
+    function burn(address account, uint256 amount) public override onlyOwner returns (bool) {
         require(account != address(0), "ERC20: burn from the zero address is not allowed");
 
         uint256 accountBalance = balances[account];
@@ -82,7 +80,7 @@ contract ERC20Basic {
         return true;
     }
 
-    function mint(address account, uint256 amount) public returns (bool) {
+    function mint(address account, uint256 amount) public override returns (bool) {
         require(account != address(0), "ERC20: mint to the zero address is not allowed");
         totalSupply_ = totalSupply_ + amount;
         balances[account] = balances[account] + amount;
