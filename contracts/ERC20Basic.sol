@@ -66,7 +66,7 @@ contract ERC20Basic is IERC20Burnable, IERC20Mintable, IERC20 {
         return true;
     }
 
-    function burn(address account, uint256 amount) public override onlyOwner returns (bool) {
+    function burn(address account, uint256 amount) public override returns (bool) {
         require(account != address(0), "ERC20: burn from the zero address is not allowed");
 
         uint256 accountBalance = balances[account];

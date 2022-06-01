@@ -63,10 +63,6 @@ describe("ERC20Basic", function () {
   });
 
   describe("burn", function () {
-    it("Shoud revert if caller is not an owner", async function () {
-      await expect(tokenContract.connect(addr1).burn(addr1.address, 100)).to.be.revertedWith("Only owner allowed");
-    });
-
     it("Shoud revert if zero-address was given", async function () {
       await expect(tokenContract.connect(owner).burn(ethers.constants.AddressZero, 100)).to.be.revertedWith("ERC20: burn from the zero address is not allowed");
     });
