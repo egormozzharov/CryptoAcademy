@@ -5,12 +5,11 @@ import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
-import "@openzeppelin/contracts/Utils/cryptography/ECDSA.sol";
+import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IERC721Mintable.sol";
 import "./interfaces/IERC1155Mintable.sol";
 import "./interfaces/IERC20.sol";
-
-using ECDSA for bytes32;
+import "hardhat/console.sol";
 
 contract Bridge {
     mapping(bytes => bool) public signaturesWereProcessed;
@@ -33,15 +32,17 @@ contract Bridge {
 
     function redeem(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) external {
         require(signaturesWereProcessed[signature] == false, "Signature was already used");
-        require(checkSignature(signature, tokenContractAddress, amount, nonce), "Signature is not valid");
+        require(this.checkSignature(signature, tokenContractAddress, amount, nonce), "Signature is not valid");
         signaturesWereProcessed[signature] = true;
         IERC20Mintable(tokenContractAddress).mint(msg.sender, amount);
         emit RedeemExecuted();
     }
 
-    function checkSignature(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) internal view returns (bool) {
+    function checkSignature(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) external view returns (bool) {
         bytes memory data = abi.encode(tokenContractAddress, amount, nonce);
-        address signer = keccak256(data).toEthSignedMessageHash().recover(signature);
+        bytes32 hash = keccak256(data);
+        bytes32 ethereumSignerdMessage = ECDSA.toEthSignedMessageHash(hash);
+        address signer = ECDSA.recover(ethereumSignerdMessage, signature);
         return signer == _validatorAddress;
     }
 }
