@@ -13,32 +13,29 @@ import "hardhat/console.sol";
 
 contract Bridge {
     mapping(bytes => bool) public signaturesWereProcessed;
-
-    event SwapExecuted(string toNetwork, address toAddress, string fromNetwork, address fromAddress, address tokenContractAddress, uint amount);
-    event RedeemExecuted();
-
-    string private _currentNetwork;
     address immutable private _validatorAddress;
 
-    constructor(string memory currentNetwork, address validatorAddress) {
-        _currentNetwork = currentNetwork;
+    event SwapExecuted(uint toNetwork, address toAddress, uint fromNetwork, address fromAddress, address tokenContractAddress, uint amount);
+    event RedeemExecuted(bytes signature, address tokenContractAddress, uint amount, uint nonce);
+
+    constructor(address validatorAddress) {
         _validatorAddress = validatorAddress;
     }
 
-    function swap(string calldata toNetwork, address toAddress, address tokenContractAddress, uint amount) external {
+    function swap(uint toNetwork, address toAddress, uint fromNetwork, address tokenContractAddress, uint amount) external {
         IERC20Burnable(tokenContractAddress).burn(msg.sender, amount);
-        emit SwapExecuted(toNetwork, toAddress, _currentNetwork, msg.sender, tokenContractAddress, amount);
+        emit SwapExecuted(toNetwork, toAddress, fromNetwork, msg.sender, tokenContractAddress, amount);
     }
 
     function redeem(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) external {
         require(signaturesWereProcessed[signature] == false, "Signature was already used");
-        require(this.checkSignature(signature, tokenContractAddress, amount, nonce), "Signature is not valid");
+        require(checkSignature(signature, tokenContractAddress, amount, nonce), "Signature is not valid");
         signaturesWereProcessed[signature] = true;
         IERC20Mintable(tokenContractAddress).mint(msg.sender, amount);
-        emit RedeemExecuted();
+        emit RedeemExecuted(signature, tokenContractAddress, amount, nonce);
     }
 
-    function checkSignature(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) external view returns (bool) {
+    function checkSignature(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) private view returns (bool) {
         bytes memory data = abi.encode(tokenContractAddress, amount, nonce);
         bytes32 hash = keccak256(data);
         bytes32 ethereumSignerdMessage = ECDSA.toEthSignedMessageHash(hash);

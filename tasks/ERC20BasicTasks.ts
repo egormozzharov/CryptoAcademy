@@ -6,7 +6,7 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import { ContractFactory } from 'ethers';
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
-import { ERC20Basic } from '../typechain-types/ERC20Basic';
+import { ERC20Basic } from '../typechain-types/contracts/ERC20Basic';
 
 export function erc20BasicTasks() {
     const ERC20BASCIC_CONTRACT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_CONTRACT_ADDRESS || "";

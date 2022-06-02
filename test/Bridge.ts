@@ -2,12 +2,12 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { ContractFactory } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ERC20Basic } from '../typechain-types/ERC20Basic';
 import { Bridge } from '../typechain-types/contracts/Bridge';
+import { ERC20Basic } from '../typechain-types/contracts/ERC20Basic';
 
 describe("Bridge", function () {
-  const TO_NETWORK = 'TO_NETWORK';
-  const FROM_NETWORK = 'FROM_NETWORK';
+  const TO_NETWORK = 1;
+  const FROM_NETWORK = 2;
 
   let bridgeContract: Bridge;
   let erc20Contract: ERC20Basic;
@@ -25,7 +25,7 @@ describe("Bridge", function () {
     await erc20Contract.deployed();
 
     const contractFactory: ContractFactory = await ethers.getContractFactory('Bridge', owner);
-    bridgeContract = (await contractFactory.deploy(FROM_NETWORK, validator.address)) as Bridge;
+    bridgeContract = (await contractFactory.deploy(validator.address)) as Bridge;
     await bridgeContract.deployed();
   });
 
@@ -34,8 +34,7 @@ describe("Bridge", function () {
       const amount = 10;
       const toAddress = addr2;
       const fromAddress = owner;
-      await bridgeContract.connect(fromAddress).swap(TO_NETWORK, toAddress.address, erc20Contract.address, amount)
-      await expect(await bridgeContract.connect(fromAddress).swap(TO_NETWORK, toAddress.address, erc20Contract.address, amount))
+      await expect(await bridgeContract.connect(fromAddress).swap(TO_NETWORK, toAddress.address, FROM_NETWORK, erc20Contract.address, amount))
         .to.emit(bridgeContract, 'SwapExecuted').withArgs(TO_NETWORK, toAddress.address, FROM_NETWORK, fromAddress.address, erc20Contract.address, amount);
     });
   });
@@ -56,7 +55,7 @@ describe("Bridge", function () {
       let signature = await validator.signMessage(ethers.utils.arrayify(hash));
 
       await expect(await bridgeContract.connect(fromAddress).redeem(signature, erc20Contract.address, amount, nonce))
-        .to.emit(bridgeContract, 'RedeemExecuted');
+        .to.emit(bridgeContract, 'RedeemExecuted').withArgs(signature, erc20Contract.address, amount, nonce);
     });
   });
 });
