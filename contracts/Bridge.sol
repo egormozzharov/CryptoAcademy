@@ -12,34 +12,44 @@ import "./interfaces/IERC20.sol";
 import "hardhat/console.sol";
 
 contract Bridge {
-    mapping(bytes => bool) public signaturesWereProcessed;
     address immutable private _validatorAddress;
+    mapping(bytes => bool) public signaturesWereProcessed;
 
-    event SwapExecuted(uint toNetwork, address toAddress, uint fromNetwork, address fromAddress, address tokenContractAddress, uint amount);
-    event RedeemExecuted(bytes signature, address tokenContractAddress, uint amount, uint nonce);
+    event Swaped(uint toNetwork, address toAddress, uint fromNetwork, address fromAddress, address tokenContractAddress, uint amount);
+    event Redeemed(bytes signature, address tokenContractAddress, uint amount, uint nonce);
 
     constructor(address validatorAddress) {
         _validatorAddress = validatorAddress;
     }
 
-    function swap(uint toNetwork, address toAddress, uint fromNetwork, address tokenContractAddress, uint amount) external {
-        IERC20Burnable(tokenContractAddress).burn(msg.sender, amount);
-        emit SwapExecuted(toNetwork, toAddress, fromNetwork, msg.sender, tokenContractAddress, amount);
+    function swap(uint toNetwork, address toAddress, uint fromNetwork, address fromAddress, address tokenContractAddress, uint amount) external {
+        IERC20Burnable(tokenContractAddress).burn(fromAddress, amount);
+        console.log(getChainID());
+        emit Swaped(toNetwork, toAddress, fromNetwork, fromAddress, tokenContractAddress, amount);
     }
 
-    function redeem(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) external {
+    function redeem(bytes calldata signature, uint toNetwork, address toAddress, address tokenContractAddress, uint amount, uint nonce) external {
+        require(toNetwork == getChainID(), "ChainId mismatch");
         require(signaturesWereProcessed[signature] == false, "Signature was already used");
-        require(checkSignature(signature, tokenContractAddress, amount, nonce), "Signature is not valid");
+        require(checkSignature(signature, toNetwork, toAddress, tokenContractAddress, amount, nonce), "Signature is not valid");
         signaturesWereProcessed[signature] = true;
-        IERC20Mintable(tokenContractAddress).mint(msg.sender, amount);
-        emit RedeemExecuted(signature, tokenContractAddress, amount, nonce);
+        IERC20Mintable(tokenContractAddress).mint(toAddress, amount);
+        emit Redeemed(signature, tokenContractAddress, amount, nonce);
     }
 
-    function checkSignature(bytes calldata signature, address tokenContractAddress, uint amount, uint nonce) private view returns (bool) {
-        bytes memory data = abi.encode(tokenContractAddress, amount, nonce);
+    function checkSignature(bytes calldata signature, uint toNetwork, address toAddress, address tokenContractAddress, uint amount, uint nonce) private view returns (bool) {
+        bytes memory data = abi.encode(toNetwork, toAddress, tokenContractAddress, amount, nonce);
         bytes32 hash = keccak256(data);
-        bytes32 ethereumSignerdMessage = ECDSA.toEthSignedMessageHash(hash);
-        address signer = ECDSA.recover(ethereumSignerdMessage, signature);
+        bytes32 ethereumSignedMessage = ECDSA.toEthSignedMessageHash(hash);
+        address signer = ECDSA.recover(ethereumSignedMessage, signature);
         return signer == _validatorAddress;
     }
+
+    function getChainID() private view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+    return id;
+}
 }

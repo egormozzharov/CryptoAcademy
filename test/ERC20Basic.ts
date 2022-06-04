@@ -2,7 +2,7 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { ContractFactory } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { ERC20Basic } from '../typechain-types/ERC20Basic';
+import { ERC20Basic } from '../typechain-types/contracts/ERC20Basic';
 
 describe("ERC20Basic", function () {
 

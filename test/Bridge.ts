@@ -34,28 +34,88 @@ describe("Bridge", function () {
       const amount = 10;
       const toAddress = addr2;
       const fromAddress = owner;
-      await expect(await bridgeContract.connect(fromAddress).swap(TO_NETWORK, toAddress.address, FROM_NETWORK, erc20Contract.address, amount))
-        .to.emit(bridgeContract, 'SwapExecuted').withArgs(TO_NETWORK, toAddress.address, FROM_NETWORK, fromAddress.address, erc20Contract.address, amount);
+      await expect(await bridgeContract.connect(fromAddress).swap(TO_NETWORK, toAddress.address, FROM_NETWORK, fromAddress.address, erc20Contract.address, amount))
+        .to.emit(bridgeContract, 'Swaped').withArgs(TO_NETWORK, toAddress.address, FROM_NETWORK, fromAddress.address, erc20Contract.address, amount);
     });
   });
 
   describe("redeem", function () {
     it("Shoud redeem successfully", async function () {
-      let fromAddress = owner;
+      let toNetwork = (await ethers.provider.getNetwork()).chainId;
+      let toAddress = addr2;
       let erc20Address = erc20Contract.address;
       let amount = 10;
       let nonce = 1;
 
       let encodedData = ethers.utils.defaultAbiCoder.encode(
-        ["address", "uint256", "uint256"],
-        [erc20Address, amount, nonce]
+        ["uint256", "address", "address", "uint256", "uint256"],
+        [toNetwork, toAddress.address, erc20Address, amount, nonce]
       );
       let arrayfyedData = ethers.utils.arrayify(encodedData);
       let hash = ethers.utils.keccak256(arrayfyedData);
       let signature = await validator.signMessage(ethers.utils.arrayify(hash));
 
-      await expect(await bridgeContract.connect(fromAddress).redeem(signature, erc20Contract.address, amount, nonce))
-        .to.emit(bridgeContract, 'RedeemExecuted').withArgs(signature, erc20Contract.address, amount, nonce);
+      await expect(await bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, erc20Contract.address, amount, nonce))
+        .to.emit(bridgeContract, 'Redeemed').withArgs(signature, erc20Contract.address, amount, nonce);
+    });
+
+    it("Shoud fail if chainId mismatch", async function () {
+      let toNetwork = 1;
+      let toAddress = addr2;
+      let erc20Address = erc20Contract.address;
+      let amount = 10;
+      let nonce = 1;
+
+      let encodedData = ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "address", "address", "uint256", "uint256"],
+        [toNetwork, toAddress.address, erc20Address, amount, nonce]
+      );
+      let arrayfyedData = ethers.utils.arrayify(encodedData);
+      let hash = ethers.utils.keccak256(arrayfyedData);
+      let signature = await validator.signMessage(ethers.utils.arrayify(hash));
+
+      await expect(bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, erc20Contract.address, amount, nonce))
+        .to.be.revertedWith("ChainId mismatch");
+    });
+
+    it("Shoud fail if signature was already used", async function () {
+      let toNetwork = (await ethers.provider.getNetwork()).chainId;
+      let toAddress = addr2;
+      let erc20Address = erc20Contract.address;
+      let amount = 10;
+      let nonce = 1;
+
+      let encodedData = ethers.utils.defaultAbiCoder.encode(
+        ["uint256", "address", "address", "uint256", "uint256"],
+        [toNetwork, toAddress.address, erc20Address, amount, nonce]
+      );
+      let arrayfyedData = ethers.utils.arrayify(encodedData);
+      let hash = ethers.utils.keccak256(arrayfyedData);
+      let signature = await validator.signMessage(ethers.utils.arrayify(hash));
+
+      await bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, erc20Contract.address, amount, nonce);
+
+      await expect(bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, erc20Contract.address, amount, nonce))
+      .to.be.revertedWith("Signature was already used");
+    });
+
+    it("Shoud fail if signature is invalid", async function () {
+      let toNetwork = (await ethers.provider.getNetwork()).chainId;
+      let toAddress = addr2;
+      let erc20Address = erc20Contract.address;
+      let amount = 10;
+      let nonce = 1;
+
+      let encodedData = ethers.utils.defaultAbiCoder.encode(
+        [],
+        []
+      );
+      let arrayfyedData = ethers.utils.arrayify(encodedData);
+      let hash = ethers.utils.keccak256(arrayfyedData);
+      let signature = await validator.signMessage(ethers.utils.arrayify(hash));
+
+      await expect(bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, erc20Contract.address, amount, nonce))
+      .to.be.revertedWith("Signature is not valid");
     });
   });
 });
