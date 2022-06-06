@@ -43,19 +43,19 @@ describe("Bridge", function () {
     it("Shoud redeem successfully", async function () {
       let toNetwork = (await ethers.provider.getNetwork()).chainId;
       let toAddress = addr2;
-      let erc20Address = erc20Contract.address;
+      let toerc20address = erc20Contract.address;
       let amount = 10;
       let nonce = 1;
 
       let encodedData = ethers.utils.defaultAbiCoder.encode(
         ["uint256", "address", "address", "uint256", "uint256"],
-        [toNetwork, toAddress.address, erc20Address, amount, nonce]
+        [toNetwork, toAddress.address, toerc20address, amount, nonce]
       );
       let arrayfyedData = ethers.utils.arrayify(encodedData);
       let hash = ethers.utils.keccak256(arrayfyedData);
       let signature = await validator.signMessage(ethers.utils.arrayify(hash));
 
-      await expect(await bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, erc20Contract.address, amount, nonce))
+      await expect(await bridgeContract.connect(owner).redeem(signature, toNetwork, toAddress.address, toerc20address, amount, nonce))
         .to.emit(bridgeContract, 'Redeemed').withArgs(signature, erc20Contract.address, amount, nonce);
     });
 
