@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import "./interfaces/IERC721Mintable.sol";
 import "./interfaces/IERC1155Mintable.sol";
 import "./interfaces/IERC20.sol";
-import "hardhat/console.sol";
 
 contract Bridge {
     address immutable private _validatorAddress;
@@ -24,7 +23,6 @@ contract Bridge {
 
     function swap(uint toNetwork, address toAddress, uint fromNetwork, address fromAddress, address tokenContractAddress, uint amount) external {
         IERC20Burnable(tokenContractAddress).burn(fromAddress, amount);
-        console.log(getChainID());
         emit Swaped(toNetwork, toAddress, fromNetwork, fromAddress, tokenContractAddress, amount);
     }
 
