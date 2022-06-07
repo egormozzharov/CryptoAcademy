@@ -15,10 +15,10 @@ contract DAO {
         uint finishTime;
     }
 
-    address private chairPerson;
-    address private voteToken;
-    uint private minimumQuorum;
-    uint private debatingPeriod;
+    address public chairPerson;
+    address public voteToken;
+    uint public minimumQuorum;
+    uint public debatingPeriod;
     uint private proposalId;
 
     mapping(address => uint) public deposits;
@@ -71,7 +71,7 @@ contract DAO {
             positiveVotes: 0,
             negativeVotes: 0,
             isFinished: false,
-            finishTime: block.timestamp + debatingPeriod;
+            finishTime: block.timestamp + debatingPeriod
         });
         emit ProposalAdded(proposalId, _description, _callData, _recipient);
     }
@@ -85,8 +85,8 @@ contract DAO {
             proposal.positiveVotes += deposits[msg.sender];
         else 
             proposal.negativeVotes += deposits[msg.sender];
-        if (finishTime > widthdrawTimestamp[msg.sender]) {
-            widthdrawTimestamp[msg.sender] = finishTime;
+        if (proposal.finishTime > widthdrawTimestamp[msg.sender])
+            widthdrawTimestamp[msg.sender] = proposal.finishTime;
         votedForProposal[proposalId][msg.sender] = true;
         emit ProposalVoted(_proposalId, isPositive, msg.sender, deposits[msg.sender]);
     }
@@ -95,9 +95,12 @@ contract DAO {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.isFinished == false, "Proposal is already finished");
         require(proposal.finishTime < block.timestamp, "Debating period has not yet ended");
-        require(proposal.positiveVotes >= minimumQuorum && proposal.negativeVotes >= minimumQuorum, "Quorum conditions are not met");
-        if (proposal.positiveVotes > proposal.negativeVotes)
+        require(proposal.positiveVotes + proposal.negativeVotes >= minimumQuorum, "Quorum conditions are not met");
+        if (proposal.positiveVotes > proposal.negativeVotes) {
+            address recipient = proposal.recipient;
+            (bool success, bytes memory result) = recipient.call(proposal.callData);
             emit ProposalExecuted(_proposalId);
+        }
         proposal.isFinished = true;
         emit ProposalFinished(_proposalId);
     }
