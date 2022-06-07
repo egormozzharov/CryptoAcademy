@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
-import "./interfaces/IERC20.sol";
-
 pragma solidity ^0.8.0;
+
+import "./interfaces/IERC20.sol";
 
 contract DAO {
     struct Proposal {
@@ -13,6 +13,7 @@ contract DAO {
         uint negativeVotes;
         bool isFinished;
         uint finishTime;
+        bool hasValue;
     }
 
     address public chairPerson;
@@ -32,6 +33,8 @@ contract DAO {
     event ProposalVoted(uint id, bool isPositive, address voter, uint amount);
     event ProposalFinished(uint id);
     event ProposalExecuted(uint id);
+
+    error ExternalContractExecutionFailed();
 
     modifier onlyChairPerson {
         require(msg.sender == chairPerson, "Only chairperson can call this function");
@@ -54,10 +57,10 @@ contract DAO {
     }
 
     function widthdraw() external {
-        require(widthdrawTimestamp[msg.sender] >= block.timestamp, "You can only widthdraw when all your deposits debating periods has passed");
+        require(block.timestamp >= widthdrawTimestamp[msg.sender], "You can only widthdraw when all your deposits debating periods has passed");
         uint amount = deposits[msg.sender];
         deposits[msg.sender] = 0;
-        IERC20(voteToken).transferFrom(address(this), msg.sender, amount);
+        IERC20(voteToken).transfer(msg.sender, amount);
         emit Widthdrawn(msg.sender, amount);
     }
 
@@ -71,13 +74,15 @@ contract DAO {
             positiveVotes: 0,
             negativeVotes: 0,
             isFinished: false,
-            finishTime: block.timestamp + debatingPeriod
+            finishTime: block.timestamp + debatingPeriod,
+            hasValue: true
         });
         emit ProposalAdded(proposalId, _description, _callData, _recipient);
     }
 
     function voteProposal(uint _proposalId, bool isPositive) external {
         Proposal storage proposal = proposals[_proposalId];
+        require(proposal.hasValue, "Proposal does not exist");
         require(deposits[msg.sender] > 0, "You must have a deposit to vote");
         require(votedForProposal[proposalId][msg.sender] == false, "You have already voted on this proposal");
         require(!proposal.isFinished, "Proposal is already finished");
@@ -93,13 +98,17 @@ contract DAO {
 
     function finishProposal(uint _proposalId) external {
         Proposal storage proposal = proposals[_proposalId];
+        require(proposal.hasValue, "Proposal does not exist");
         require(proposal.isFinished == false, "Proposal is already finished");
         require(proposal.finishTime < block.timestamp, "Debating period has not yet ended");
         require(proposal.positiveVotes + proposal.negativeVotes >= minimumQuorum, "Quorum conditions are not met");
         if (proposal.positiveVotes > proposal.negativeVotes) {
             address recipient = proposal.recipient;
-            (bool success, bytes memory result) = recipient.call(proposal.callData);
-            emit ProposalExecuted(_proposalId);
+            (bool success, ) = recipient.call(proposal.callData);
+            if (success)
+                emit ProposalExecuted(_proposalId);
+            else
+                revert ExternalContractExecutionFailed();
         }
         proposal.isFinished = true;
         emit ProposalFinished(_proposalId);

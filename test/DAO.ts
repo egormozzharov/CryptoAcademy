@@ -4,11 +4,14 @@ import { ContractFactory } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
 import { DAO } from '../typechain-types/contracts/DAO';
 import { ERC20Basic } from '../typechain-types/contracts/ERC20Basic';
+import { StakingStub } from '../typechain-types/contracts/StakingStub';
+import { blockTimestampTools } from '../scripts/tools';
 
 describe("DAO", function () {
 
   let daoContract: DAO;
   let tokenContract: ERC20Basic;
+  let stakingContract: StakingStub;
   let owner: SignerWithAddress;
   let addr1: SignerWithAddress;
   let addr2: SignerWithAddress;
@@ -20,6 +23,10 @@ describe("DAO", function () {
     tokenContract = (await tokenContractFactory.connect(owner).deploy()) as ERC20Basic;
     await tokenContract.deployed();
 
+    const stakingContractFactory: ContractFactory = await ethers.getContractFactory("StakingStub");
+    stakingContract = (await stakingContractFactory.connect(owner).deploy(10)) as StakingStub;
+    await tokenContract.deployed();
+
     let chairPerson = owner.address;
     let voteToken = tokenContract.address;
     let minimumQuorum = 10;
@@ -29,6 +36,7 @@ describe("DAO", function () {
     await daoContract.deployed();
 
     await tokenContract.connect(owner).approve(daoContract.address, 1000);
+    await stakingContract.connect(owner).setEditor(daoContract.address);
   });
 
   describe("deposit", function () {
@@ -39,61 +47,63 @@ describe("DAO", function () {
     });
   });
 
-  describe("addProposal", function () {
-    it("Shoud add proposal successfully", async function () {
-      let description = "description";
-      let callData = getExternalContractCallData();
-      let recipient = addr1.address;
-      await expect(await daoContract.connect(owner).addProposal(description, callData, recipient))
-      .to.emit(daoContract, "ProposalAdded").withArgs(1, description, callData, recipient);
+  describe("widthdraw", function () {
+    it("Shoud widthdraw successfully", async function () {
+      let initialBalance = await tokenContract.balanceOf(owner.address);
+      await daoContract.connect(owner).deposit(100);
+      await expect(await daoContract.connect(owner).widthdraw())
+        .to.emit(daoContract, "Widthdrawn").withArgs(owner.address, 100);
+      await expect(await tokenContract.balanceOf(owner.address)).to.be.equal(initialBalance);
     });
   });
 
-  function getExternalContractCallData() {
+  describe("addProposal", function () {
+    it("Shoud add proposal successfully", async function () {
+      let proposalId = 1;
+      let description = "description";
+      let callData = getExternalContractCallData(50);
+      let recipient = stakingContract.address;
+      await expect(await daoContract.connect(owner).addProposal(description, callData, recipient))
+        .to.emit(daoContract, "ProposalAdded").withArgs(proposalId, description, callData, recipient);
+    });
+  });
+
+  function getExternalContractCallData(amount: number) {
     let jsonAbi = [{ "constant": false, "inputs": [{ "name": "amount", "type": "uint256" }], "name": "setRewardPersentage", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }];
     let iFace = new ethers.utils.Interface(jsonAbi);
-    return iFace.encodeFunctionData('setRewardPersentage', [50]);
+    return iFace.encodeFunctionData('setRewardPersentage', [amount]);
   }
 
-  // describe("voteProposal", function () {
-  //   it("Shoud vote proposal successfully", async function () {
-  //     // arrange
-  //     const tokenId = 1;
-  //     const amount = 10;
-  //     const uri = "https://example.com/";
-  //     await daoContract.mint(owner.address, amount, uri);
-  //     // act
-  //     await daoContract.safeTransferFrom(await owner.getAddress(), await addr1.getAddress(), tokenId, amount, []);
-  //     // assert
-  //     await expect(await daoContract.balanceOf(await addr1.getAddress(), tokenId)).to.be.equal(amount);
-  //   });
-  // });
+  describe("voteProposal", function () {
+    it("Shoud vote proposal successfully", async function () {
+      let proposalId = 1;
+      let description = "description";
+      let callData = getExternalContractCallData(50);
+      let recipient = stakingContract.address;
+      await daoContract.connect(owner).addProposal(description, callData, recipient)
+      await daoContract.connect(owner).deposit(100);
 
-  // describe("finishProposal", function () {
-  //   it("Shoud finish proposal successfully", async function () {
-  //     // arrange
-  //     const tokenId = 1;
-  //     const amount = 10;
-  //     const uri = "https://example.com/";
-  //     await daoContract.mint(owner.address, amount, uri);
-  //     // act
-  //     await daoContract.safeTransferFrom(await owner.getAddress(), await addr1.getAddress(), tokenId, amount, []);
-  //     // assert
-  //     await expect(await daoContract.balanceOf(await addr1.getAddress(), tokenId)).to.be.equal(amount);
-  //   });
-  // });
+      await expect(await daoContract.connect(owner).voteProposal(proposalId, true))
+        .to.emit(daoContract, "ProposalVoted").withArgs(proposalId, true, owner.address, 100);
+    });
+  });
 
-  // describe("widthdraw", function () {
-  //   it("Shoud widthdraw successfully", async function () {
-  //     // arrange
-  //     const tokenId = 1;
-  //     const amount = 10;
-  //     const uri = "https://example.com/";
-  //     await daoContract.mint(owner.address, amount, uri);
-  //     // act
-  //     await daoContract.safeTransferFrom(await owner.getAddress(), await addr1.getAddress(), tokenId, amount, []);
-  //     // assert
-  //     await expect(await daoContract.balanceOf(await addr1.getAddress(), tokenId)).to.be.equal(amount);
-  //   });
-  // });
+  describe("finishProposal", function () {
+    it("Shoud finish proposal successfully", async function () {
+      let proposalId = 1;
+      let description = "description";
+      let amount = 50;
+      let callData = getExternalContractCallData(amount);
+      let recipient = stakingContract.address;
+
+      await daoContract.connect(owner).addProposal(description, callData, recipient)
+      await daoContract.connect(owner).deposit(100);
+      await daoContract.connect(owner).voteProposal(proposalId, true);
+      await blockTimestampTools.forwardTimestamp(3600);
+      await expect(await daoContract.finishProposal(proposalId))
+        .to.emit(daoContract, "ProposalFinished").withArgs(proposalId);
+      
+      expect(await stakingContract.rewardPercentage()).to.be.equal(amount);
+    });
+  });
 });
