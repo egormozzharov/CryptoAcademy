@@ -11,8 +11,8 @@ contract StakingStub {
         _;
     }
 
-    modifier onlyEditor {
-        require(msg.sender == editor, "Only editor can call this function");
+    modifier onlyEditorOrOwner() {
+        require(msg.sender == editor || msg.sender == owner, "Only editor can call this function");
         _;
     }
 
@@ -21,7 +21,7 @@ contract StakingStub {
         rewardPercentage = _rewardPercentage;
     }
 
-    function setRewardPersentage(uint256 amount) external onlyEditor {
+    function setRewardPersentage(uint256 amount) external onlyEditorOrOwner {
         rewardPercentage = amount;
     }
 
