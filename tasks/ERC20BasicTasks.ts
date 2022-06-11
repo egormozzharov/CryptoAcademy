@@ -52,7 +52,7 @@ export function erc20BasicTasks() {
         console.log('Transfered');
     });
 
-    task("balanceof", "Balance of",)
+    task("balanceof", "Balance of")
     .addParam("account", "The account's address", "string")
     .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
         const tokenContract = await attachToContract(hre);
