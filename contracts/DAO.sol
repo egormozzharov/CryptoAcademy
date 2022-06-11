@@ -5,7 +5,6 @@ import "./interfaces/IERC20.sol";
 
 contract DAO {
     struct Proposal {
-        uint256 id;
         string description;
         bytes callData;
         address recipient;
@@ -13,13 +12,12 @@ contract DAO {
         uint negativeVotes;
         bool isFinished;
         uint finishTime;
-        bool hasValue;
     }
 
-    address public chairPerson;
-    address public voteToken;
-    uint public minimumQuorum;
-    uint public debatingPeriod;
+    address public immutable chairPerson;
+    address public immutable voteToken;
+    uint public immutable minimumQuorum;
+    uint public immutable debatingPeriod;
     uint private proposalId;
 
     mapping(address => uint) public deposits;
@@ -65,24 +63,22 @@ contract DAO {
     }
 
     function addProposal(string calldata _description, bytes calldata _callData, address _recipient) external onlyChairPerson {
+        require(_recipient != address(0), "Recipient cannot be the zero address");
         proposalId++;
         proposals[proposalId] = Proposal({
-            id: proposalId,
             description: _description,
             callData: _callData,
             recipient: _recipient,
             positiveVotes: 0,
             negativeVotes: 0,
             isFinished: false,
-            finishTime: block.timestamp + debatingPeriod,
-            hasValue: true
+            finishTime: block.timestamp + debatingPeriod
         });
         emit ProposalAdded(proposalId, _description, _callData, _recipient);
     }
 
     function voteProposal(uint _proposalId, bool isPositive) external {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.hasValue, "Proposal does not exist");
         require(deposits[msg.sender] > 0, "You must have a deposit to vote");
         require(votedForProposal[proposalId][msg.sender] == false, "You have already voted on this proposal");
         require(!proposal.isFinished, "Proposal is already finished");
@@ -98,7 +94,6 @@ contract DAO {
 
     function finishProposal(uint _proposalId) external {
         Proposal storage proposal = proposals[_proposalId];
-        require(proposal.hasValue, "Proposal does not exist");
         require(proposal.isFinished == false, "Proposal is already finished");
         require(proposal.finishTime < block.timestamp, "Debating period has not yet ended");
         require(proposal.positiveVotes + proposal.negativeVotes >= minimumQuorum, "Quorum conditions are not met");

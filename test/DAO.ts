@@ -71,12 +71,16 @@ describe("DAO", function () {
 
   describe("addProposal", function () {
     it("Shoud add proposal successfully", async function () {
-      let proposalId = 1;
       let description = "description";
       let callData = getExternalContractCallData(50);
       let recipient = stakingContract.address;
       await expect(await daoContract.connect(owner).addProposal(description, callData, recipient))
         .to.emit(daoContract, "ProposalAdded").withArgs(1, description, callData, recipient);
+    });
+
+    it("Shoud fail if reciever is zero address", async function () {
+      await expect(daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), ethers.constants.AddressZero))
+        .to.be.revertedWith("Recipient cannot be the zero address");
     });
   });
 
@@ -105,11 +109,6 @@ describe("DAO", function () {
       await expect(daoContract.connect(owner).voteProposal(proposalId, false))
         .to.emit(daoContract, "ProposalVoted").withArgs(proposalId, false, owner.address, 100);
       await expect((await daoContract.proposals(1)).negativeVotes).to.be.equal(100);
-    });
-
-    it("Shoud fail if proposal does not exist", async function () {
-      await expect(daoContract.connect(owner).voteProposal(1, true))
-        .to.be.revertedWith("Proposal does not exist");
     });
 
     it("Shoud fail if you have no deposit yet", async function () {
@@ -157,11 +156,6 @@ describe("DAO", function () {
         .to.emit(daoContract, "ProposalExecuted").withArgs(proposalId);
       
       expect(await stakingContract.rewardPercentage()).to.be.equal(amount);
-    });
-
-    it("Shoud faild if proposal does not exist", async function () {
-      await expect(daoContract.finishProposal(1))
-        .to.be.revertedWith("Proposal does not exist");
     });
 
     it("Shoud fail if the proposal already finished", async function () {
