@@ -39,7 +39,6 @@ describe("DAO", function () {
     await tokenContract.connect(addr1).approve(daoContract.address, 100);
     await tokenContract.connect(owner).approve(daoContract.address, 1000);
     await tokenContract.connect(owner).transfer(addr1.address, 100);
-    await stakingContract.connect(owner).setEditor(daoContract.address);
   });
 
   describe("deposit", function () {
@@ -60,7 +59,7 @@ describe("DAO", function () {
     });
 
     it("Shoud fail widthdraw if you have active deposits", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
       await daoContract.connect(owner).deposit(100);
       await daoContract.connect(owner).voteProposal(1, true);
 
@@ -103,7 +102,7 @@ describe("DAO", function () {
       let description = "description";
       let callData = getExternalContractCallData(50);
       let recipient = stakingContract.address;
-      await daoContract.connect(owner).addProposal(description, callData, recipient)
+      await daoContract.connect(owner).addProposal(description, callData, recipient);
       await daoContract.connect(owner).deposit(100);
 
       await expect(daoContract.connect(owner).voteProposal(proposalId, false))
@@ -112,25 +111,26 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if you have no deposit yet", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
       await expect(daoContract.connect(owner).voteProposal(1, true))
         .to.be.revertedWith("You must have a deposit to vote");
     });
 
     it("Shoud fail if you have already voted on this proposal", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
       await daoContract.connect(owner).deposit(100);
-      await daoContract.connect(owner).voteProposal(1, true)
+      await daoContract.connect(owner).voteProposal(1, true);
       await expect(daoContract.connect(owner).voteProposal(1, true))
         .to.be.revertedWith("You have already voted on this proposal");
     });
 
     it("Shoud fail if the proposal already finished", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
       await daoContract.connect(owner).deposit(100);
       await daoContract.connect(addr1).deposit(100);
       await blockTimestampTools.forwardTimestamp(3600);
-      await daoContract.connect(owner).voteProposal(1, true)
+      await daoContract.connect(owner).voteProposal(1, true);
+      await stakingContract.connect(owner).setEditor(daoContract.address);
       await daoContract.connect(owner).finishProposal(1);
 
       await expect(daoContract.connect(addr1).voteProposal(1, true))
@@ -145,10 +145,11 @@ describe("DAO", function () {
       let amount = 50;
       let callData = getExternalContractCallData(amount);
       let recipient = stakingContract.address;
-      await daoContract.connect(owner).addProposal(description, callData, recipient)
+      await daoContract.connect(owner).addProposal(description, callData, recipient);
       await daoContract.connect(owner).deposit(100);
       await daoContract.connect(owner).voteProposal(proposalId, true);
       await blockTimestampTools.forwardTimestamp(3600);
+      await stakingContract.connect(owner).setEditor(daoContract.address);
 
       await expect(await daoContract.finishProposal(proposalId))
         .to.emit(daoContract, "ProposalFinished").withArgs(proposalId)
@@ -159,11 +160,12 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the proposal already finished", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
       await daoContract.connect(owner).deposit(100);
       await daoContract.connect(addr1).deposit(100);
       await blockTimestampTools.forwardTimestamp(3600);
       await daoContract.connect(owner).voteProposal(1, true)
+      await stakingContract.connect(owner).setEditor(daoContract.address);
       await daoContract.connect(owner).finishProposal(1);
 
       await expect(daoContract.finishProposal(1))
@@ -171,17 +173,30 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the dabating period has not ended yet", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
+      await stakingContract.connect(owner).setEditor(daoContract.address);
       await expect(daoContract.finishProposal(1))
         .to.be.revertedWith("Debating period has not yet ended");
     });
 
     it("Shoud fail if the quorum conditions are not met", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address)
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
       await blockTimestampTools.forwardTimestamp(3600);
+      await stakingContract.connect(owner).setEditor(daoContract.address);
 
       await expect(daoContract.finishProposal(1))
         .to.be.revertedWith("Quorum conditions are not met");
+    });
+
+    it("Shoud fail if the external contract call is reverted", async function () {
+      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
+      await daoContract.connect(owner).deposit(100);
+      await daoContract.connect(addr1).deposit(100);
+      await blockTimestampTools.forwardTimestamp(3600);
+      await daoContract.connect(owner).voteProposal(1, true);
+
+      await expect(daoContract.finishProposal(1))
+        .to.be.revertedWith("Only editor can call this function");
     });
   });
 

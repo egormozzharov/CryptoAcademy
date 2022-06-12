@@ -5,13 +5,13 @@ import "./interfaces/IERC20.sol";
 
 contract DAO {
     struct Proposal {
-        string description;
-        bytes callData;
+        bool isFinished;
         address recipient;
         uint positiveVotes;
         uint negativeVotes;
-        bool isFinished;
         uint finishTime;
+        string description;
+        bytes callData;
     }
 
     address public immutable chairPerson;
@@ -99,11 +99,16 @@ contract DAO {
         require(proposal.positiveVotes + proposal.negativeVotes >= minimumQuorum, "Quorum conditions are not met");
         if (proposal.positiveVotes > proposal.negativeVotes) {
             address recipient = proposal.recipient;
-            (bool success, ) = recipient.call(proposal.callData);
+            (bool success, bytes memory returndata) = recipient.call(proposal.callData);
             if (success)
                 emit ProposalExecuted(_proposalId);
-            else
-                revert ExternalContractExecutionFailed();
+            else {
+                if (returndata.length == 0) 
+                    revert();
+                assembly {
+                    revert(add(32, returndata), mload(returndata))
+                }
+            }
         }
         proposal.isFinished = true;
         emit ProposalFinished(_proposalId);
