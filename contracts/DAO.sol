@@ -103,6 +103,7 @@ contract DAO {
             if (success)
                 emit ProposalExecuted(_proposalId);
             else {
+                // https://ethereum.stackexchange.com/questions/109457/how-to-bubble-up-a-custom-error-when-using-delegatecall
                 if (returndata.length == 0) 
                     revert();
                 assembly {
