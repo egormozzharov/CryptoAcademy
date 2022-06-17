@@ -8,16 +8,12 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import { erc20BasicTasks } from './tasks/ERC20BasicTasks';
 import { commonTasks } from './tasks/CommonTasks';
-import { erc721Tasks } from './tasks/ERC721Tasks';
-import { erc1155Tasks } from './tasks/ERC1155Tasks';
 import { daoTasks } from './tasks/DAOTasks';
 
 dotenv.config();
 
 commonTasks();
 erc20BasicTasks();
-erc721Tasks();
-erc1155Tasks();
 daoTasks();
 
 const config: HardhatUserConfig = {
