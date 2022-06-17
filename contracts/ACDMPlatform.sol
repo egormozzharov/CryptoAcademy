@@ -39,6 +39,7 @@ contract ACDMPlatform {
     uint public tradingEndTime;
 
     Order[] public orders;
+    mapping (address => address[]) public usersWithReferers;
 
     event UserRegistered(address _newUser, address _referer);
     event SaleRoundStarted();
@@ -60,6 +61,14 @@ contract ACDMPlatform {
     }
 
     function register(address _newUser, address _referer) external {
+        require(_newUser != address(0), "User cannot be the zero address");
+        require(_referer != address(0), "Referer cannot be the zero address");
+        address[] memory referers = new address[](2);
+        referers[0] = _referer;
+        if (usersWithReferers[_referer].length > 0) {
+            referers[1] = usersWithReferers[_referer][0];
+        }
+        usersWithReferers[_newUser] = referers;
         emit UserRegistered(_newUser, _referer);
     }
 
@@ -69,7 +78,7 @@ contract ACDMPlatform {
         saleIsActive = true;
         pricePerUnitInCurrentPeriod = nextPriceGenerator.getNext();
         amountInCurrentPeriod = tradingWeiAmount / pricePerUnitInCurrentPeriod;
-        IERC20Mintable (acdmToken).mint(address(this), amountInCurrentPeriod);
+        IERC20Mintable(acdmToken).mint(address(this), amountInCurrentPeriod);
         emit SaleRoundStarted();
     }
 
