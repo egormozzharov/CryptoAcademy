@@ -62,7 +62,6 @@ contract ACDMPlatform {
 
     function register(address _newUser, address _referer) external {
         require(_newUser != address(0), "User cannot be the zero address");
-        require(_referer != address(0), "Referer cannot be the zero address");
         address[] memory referers = new address[](2);
         referers[0] = _referer;
         if (usersWithReferers[_referer].length > 0) {

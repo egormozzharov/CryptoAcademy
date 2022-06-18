@@ -30,8 +30,16 @@ describe("ACDMPlatform", function () {
 
   describe("register", function () {
     it("Shoud register successfully", async function () {
-      await expect(acdmPlatform.register(owner.address, addr1.address))
-        .to.emit(acdmPlatform, "UserRegistered").withArgs(owner.address, addr1.address);
+      await acdmPlatform.register(owner.address, ethers.constants.AddressZero);
+      await acdmPlatform.register(addr1.address, owner.address);
+      await expect(acdmPlatform.register(addr2.address, addr1.address))
+        .to.emit(acdmPlatform, "UserRegistered").withArgs(addr2.address, addr1.address);
+
+      let referer1 = await acdmPlatform.usersWithReferers(addr2.address, 0);
+      let referer2 = await acdmPlatform.usersWithReferers(addr2.address, 1);
+
+      expect(referer1).to.equal(addr1.address);
+      expect(referer2).to.equal(owner.address);
     });
   });
 
