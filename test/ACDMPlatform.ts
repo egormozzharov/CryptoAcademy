@@ -13,6 +13,7 @@ describe("ACDMPlatform", function () {
   let owner: SignerWithAddress;
   let addr1: SignerWithAddress;
   let addr2: SignerWithAddress;
+  let roundInterval = 3600;
 
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
@@ -22,10 +23,18 @@ describe("ACDMPlatform", function () {
     acdmToken = (await acdmTokenContractFactory.connect(owner).deploy(adcmTokenSypply)) as ACDMToken;
     await acdmToken.deployed();
 
-    const roundInterval = 3600;
     const acdmPlatformContractFactory: ContractFactory = await ethers.getContractFactory("ACDMPlatform");
     acdmPlatform = (await acdmPlatformContractFactory.connect(owner).deploy(acdmToken.address, roundInterval)) as ACDMPlatform;
     await acdmToken.deployed();
+  });
+
+  describe("Initial values", function () {
+    it("Initial price should be correct", async function () {
+      expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(10000000);
+      expect(await acdmPlatform.tradingWeiAmount()).equal(BigInt("1000000000000000000"));
+      expect(await acdmPlatform.roundTime()).to.be.equal(roundInterval);
+      expect(await acdmPlatform.acdmToken()).to.be.equal(acdmToken.address);
+    });
   });
 
   describe("register", function () {

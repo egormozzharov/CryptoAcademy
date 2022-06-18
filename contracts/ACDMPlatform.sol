@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IERC20.sol";
+import "hardhat/console.sol";
 
 contract NextPriceGenerator {
     uint private currentPrice;
@@ -56,7 +57,8 @@ contract ACDMPlatform {
         acdmToken = _acdmToken;
         roundTime = _roundTime;
         tradingWeiAmount = 1 * 10**18;
-        pricePerUnitInCurrentPeriod = (1 * 10**18 / 100000 * 10**6);
+        pricePerUnitInCurrentPeriod = ((1 * 10**18) / (100000 * 10**6));
+        console.log(pricePerUnitInCurrentPeriod);
         nextPriceGenerator = new NextPriceGenerator(pricePerUnitInCurrentPeriod);
     }
 
