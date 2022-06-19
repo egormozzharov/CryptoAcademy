@@ -67,29 +67,14 @@ contract ACDMPlatform {
         emit SaleRoundStarted();
     }
 
-    function getNextPricePerUnitInCurrentPeriod() private view returns(uint) {
-        if (isFirstRound) {
-            return pricePerUnitInCurrentPeriod;
-        }
-        return pricePerUnitInCurrentPeriod * 103 / 100 + 4 * 10**12;
-    }
-
-    function getNextAmountOfACDM() private view returns(uint) {
-        if (isFirstRound) {
-           return amountInCurrentPeriod;
-        }
-        return tradingWeiAmount / pricePerUnitInCurrentPeriod;
-    }
-
     function buyACDM() payable external {
-        console.log("msgvalue=", msg.value);
-        console.log("pricePerUnitInCurrentPeriod=", pricePerUnitInCurrentPeriod);
         uint amountToBuy = msg.value / pricePerUnitInCurrentPeriod;
-        console.log("amountToBuy=", amountToBuy);
-        console.log("amountInCurrentPeriod=", amountInCurrentPeriod);
         require (amountInCurrentPeriod > amountToBuy, "Order amount must be greater or equal to the sender amount");
         amountInCurrentPeriod = amountInCurrentPeriod - amountToBuy;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
+        address[] storage referers = usersWithReferers[msg.sender];
+        if (referers.length == 1) payable(referers[0]).send((msg.value * 5) / 100);
+        if (referers.length == 2) payable(referers[1]).send((msg.value * 3) / 100);
         emit BuyACDM(msg.sender, amountToBuy);
     }
 
@@ -136,6 +121,23 @@ contract ACDMPlatform {
         }
         tradingWeiAmount = tradingWeiAmount + msg.value;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
+        address[] storage referers = usersWithReferers[msg.sender];
+        if (referers.length == 1) payable(referers[0]).send((msg.value * 25) / 1000);
+        if (referers.length == 2) payable(referers[1]).send((msg.value * 25) / 1000);
         emit BuyOrder(msg.sender, amountToBuy);
+    }
+
+    function getNextPricePerUnitInCurrentPeriod() private view returns(uint) {
+        if (isFirstRound) {
+            return pricePerUnitInCurrentPeriod;
+        }
+        return pricePerUnitInCurrentPeriod * 103 / 100 + 4 * 10**12;
+    }
+
+    function getNextAmountOfACDM() private view returns(uint) {
+        if (isFirstRound) {
+           return amountInCurrentPeriod;
+        }
+        return tradingWeiAmount / pricePerUnitInCurrentPeriod;
     }
 }
