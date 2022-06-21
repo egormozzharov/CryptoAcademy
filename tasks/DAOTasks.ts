@@ -6,25 +6,11 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import { HardhatRuntimeEnvironment } from 'hardhat/types';
 import { DAO } from '../typechain-types/contracts/DAO';
-import { IERC20 } from '../typechain-types/contracts/interfaces/IERC20.sol/IERC20';
 
 export function daoTasks() {
     const DAO_CONTRACT_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_DAO_CONTRACT_ADDRESS || "";
     const STAKING_STUB_ADDRESS = process.env.RINKEBY_URL_DEPLOYED_STAKING_STUB || "";
     const DAO_CONTRACT_NAME = "DAO";
-
-    // npx hardhat deposit --network rinkeby --amount 100
-    task("deposit", "Deposit")
-    .addParam("amount", "integer")
-    .setAction(async ({amount}, hre: HardhatRuntimeEnvironment) => {
-        const [owner] = await hre.ethers.getSigners();
-        const daoContract = (await hre.ethers.getContractAt(DAO_CONTRACT_NAME, DAO_CONTRACT_ADDRESS)) as DAO;
-        const voteTokenAddress = await daoContract.connect(owner).voteToken();
-        console.log("voteTokenAddress=", voteTokenAddress);
-        const voteTokenContract = (await hre.ethers.getContractAt("IERC20", voteTokenAddress)) as IERC20;
-        await voteTokenContract.connect(owner).approve(daoContract.address, amount);
-        await daoContract.connect(owner).deposit(amount);
-    });
 
     // npx hardhat addproposal --network rinkeby --description description1 --amount 100
     task("addproposal", "Add proposal")

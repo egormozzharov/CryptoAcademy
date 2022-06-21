@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./interfaces/IERC20.sol";
+import "./interfaces/IStaking.sol";
+import "hardhat/console.sol";
 
 contract DAO {
     struct Proposal {
@@ -14,13 +15,13 @@ contract DAO {
         bytes callData;
     }
 
+    address public immutable stakingContract;
     address public immutable chairPerson;
     address public immutable voteToken;
     uint public immutable minimumQuorum;
     uint public immutable debatingPeriod;
     uint private proposalId;
 
-    mapping(address => uint) public deposits;
     mapping(uint => Proposal) public proposals;
     mapping(uint => mapping (address => bool)) public votedForProposal;
     mapping(address => uint) public widthdrawTimestamp;
@@ -39,27 +40,14 @@ contract DAO {
         _;
     }
 
-    constructor(address _chairPerson, address _voteToken, uint _minimumQuorum, uint _debatingPeriod) {
+    constructor(address _stakingContract, address _chairPerson, address _voteToken, uint _minimumQuorum, uint _debatingPeriod) {
         require(_chairPerson != address(0), "ChairPerson cannot be the zero address");
         require(_voteToken != address(0), "VoteToken cannot be the zero address");
+        stakingContract = _stakingContract;
         chairPerson = _chairPerson;
         voteToken = _voteToken;
         minimumQuorum = _minimumQuorum;
         debatingPeriod = _debatingPeriod;
-    }
-
-    function deposit(uint256 amount) external {
-        deposits[msg.sender] = deposits[msg.sender] + amount;
-        IERC20(voteToken).transferFrom(msg.sender, address(this), amount);
-        emit Deposited(msg.sender, amount);
-    }
-
-    function widthdraw() external {
-        require(block.timestamp >= widthdrawTimestamp[msg.sender], "You can only widthdraw when all your deposits debating periods has passed");
-        uint amount = deposits[msg.sender];
-        deposits[msg.sender] = 0;
-        IERC20(voteToken).transfer(msg.sender, amount);
-        emit Widthdrawn(msg.sender, amount);
     }
 
     function addProposal(string calldata _description, bytes calldata _callData, address _recipient) external onlyChairPerson {
@@ -79,17 +67,22 @@ contract DAO {
 
     function voteProposal(uint _proposalId, bool isPositive) external {
         Proposal storage proposal = proposals[_proposalId];
-        require(deposits[msg.sender] > 0, "You must have a deposit to vote");
+        require(getDeposit(msg.sender) > 0, "You must have a deposit to vote");
         require(votedForProposal[proposalId][msg.sender] == false, "You have already voted on this proposal");
         require(!proposal.isFinished, "Proposal is already finished");
         if (isPositive)
-            proposal.positiveVotes += deposits[msg.sender];
+            proposal.positiveVotes += getDeposit(msg.sender);
         else 
-            proposal.negativeVotes += deposits[msg.sender];
+            proposal.negativeVotes += getDeposit(msg.sender);
         if (proposal.finishTime > widthdrawTimestamp[msg.sender])
             widthdrawTimestamp[msg.sender] = proposal.finishTime;
         votedForProposal[proposalId][msg.sender] = true;
-        emit ProposalVoted(_proposalId, isPositive, msg.sender, deposits[msg.sender]);
+        emit ProposalVoted(_proposalId, isPositive, msg.sender, getDeposit(msg.sender));
+    }
+
+    function getDeposit(address _address) private returns(uint) {
+        uint deposit = IStaking(stakingContract).getBalance(_address);
+        return deposit;
     }
 
     function finishProposal(uint _proposalId) external {

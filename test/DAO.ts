@@ -41,33 +41,6 @@ describe("DAO", function () {
     await tokenContract.connect(owner).transfer(addr1.address, 100);
   });
 
-  describe("deposit", function () {
-    it("Shoud deposit successfully", async function () {
-      await daoContract.connect(owner).deposit(100);
-      const balance = await daoContract.deposits(owner.address);
-      expect(balance).to.be.equal(100);
-    });
-  });
-
-  describe("widthdraw", function () {
-    it("Shoud widthdraw successfully", async function () {
-      let initialBalance = await tokenContract.balanceOf(owner.address);
-      await daoContract.connect(owner).deposit(100);
-      await expect(await daoContract.connect(owner).widthdraw())
-        .to.emit(daoContract, "Widthdrawn").withArgs(owner.address, 100);
-      await expect(await tokenContract.balanceOf(owner.address)).to.be.equal(initialBalance);
-    });
-
-    it("Shoud fail widthdraw if you have active deposits", async function () {
-      await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
-      await daoContract.connect(owner).deposit(100);
-      await daoContract.connect(owner).voteProposal(1, true);
-
-      await expect(daoContract.connect(owner).widthdraw())
-        .to.be.revertedWith("You can only widthdraw when all your deposits debating periods has passed");
-    });
-  });
-
   describe("addProposal", function () {
     it("Shoud add proposal successfully", async function () {
       let description = "description";
@@ -90,7 +63,7 @@ describe("DAO", function () {
       let callData = getExternalContractCallData(50);
       let recipient = stakingContract.address;
       await daoContract.connect(owner).addProposal(description, callData, recipient)
-      await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
 
       await expect(daoContract.connect(owner).voteProposal(proposalId, true))
         .to.emit(daoContract, "ProposalVoted").withArgs(proposalId, true, owner.address, 100);
@@ -103,7 +76,7 @@ describe("DAO", function () {
       let callData = getExternalContractCallData(50);
       let recipient = stakingContract.address;
       await daoContract.connect(owner).addProposal(description, callData, recipient);
-      await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
 
       await expect(daoContract.connect(owner).voteProposal(proposalId, false))
         .to.emit(daoContract, "ProposalVoted").withArgs(proposalId, false, owner.address, 100);
@@ -118,7 +91,7 @@ describe("DAO", function () {
 
     it("Shoud fail if you have already voted on this proposal", async function () {
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
-      await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
       await daoContract.connect(owner).voteProposal(1, true);
       await expect(daoContract.connect(owner).voteProposal(1, true))
         .to.be.revertedWith("You have already voted on this proposal");
@@ -126,8 +99,8 @@ describe("DAO", function () {
 
     it("Shoud fail if the proposal already finished", async function () {
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
-      await daoContract.connect(owner).deposit(100);
-      await daoContract.connect(addr1).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(addr1).deposit(100);
       await blockTimestampTools.forwardTimestamp(3600);
       await daoContract.connect(owner).voteProposal(1, true);
       await stakingContract.connect(owner).setEditor(daoContract.address);
@@ -146,7 +119,7 @@ describe("DAO", function () {
       let callData = getExternalContractCallData(amount);
       let recipient = stakingContract.address;
       await daoContract.connect(owner).addProposal(description, callData, recipient);
-      await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
       await daoContract.connect(owner).voteProposal(proposalId, true);
       await blockTimestampTools.forwardTimestamp(3600);
       await stakingContract.connect(owner).setEditor(daoContract.address);
@@ -161,8 +134,8 @@ describe("DAO", function () {
 
     it("Shoud fail if the proposal already finished", async function () {
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
-      await daoContract.connect(owner).deposit(100);
-      await daoContract.connect(addr1).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(addr1).deposit(100);
       await blockTimestampTools.forwardTimestamp(3600);
       await daoContract.connect(owner).voteProposal(1, true)
       await stakingContract.connect(owner).setEditor(daoContract.address);
@@ -190,8 +163,8 @@ describe("DAO", function () {
 
     it("Shoud fail if the external contract call is reverted", async function () {
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), stakingContract.address);
-      await daoContract.connect(owner).deposit(100);
-      await daoContract.connect(addr1).deposit(100);
+      // await daoContract.connect(owner).deposit(100);
+      // await daoContract.connect(addr1).deposit(100);
       await blockTimestampTools.forwardTimestamp(3600);
       await daoContract.connect(owner).voteProposal(1, true);
 
