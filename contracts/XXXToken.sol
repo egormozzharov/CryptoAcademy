@@ -10,4 +10,14 @@ contract XXXToken is ERC20 {
     constructor(uint256 initialSupply) ERC20("XXXToken", "XXX") {
         _mint(msg.sender, initialSupply);
     }
+
+    function mint(address account, uint256 amount) external returns (bool){
+        _mint(account, amount);
+        return true;
+    }
+
+    function burn(address account, uint256 amount) external returns (bool) {
+        _burn(account, amount);
+        return true;
+    }
 }
