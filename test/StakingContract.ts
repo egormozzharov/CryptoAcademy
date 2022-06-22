@@ -8,6 +8,7 @@ import { IERC20 } from '../typechain-types/@openzeppelin/contracts/token/ERC20/I
 import { IUniswapV2Factory } from '../typechain-types/contracts/interfaces/IUniswapV2Factory';
 import { blockTimestampTools } from "../scripts/tools";
 import { XXXToken } from '../typechain-types/contracts/XXXToken';
+import { DAO } from '../typechain-types/contracts/DAO';
 
 describe("StakingContract", function () {
 
@@ -17,6 +18,7 @@ describe("StakingContract", function () {
 
   let customToken: XXXToken;
   let stakingContract: StakingContract;
+  let daoContract: DAO;
   let lpToken: IERC20;
 
   const UniswapV2Router02Address: string = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
@@ -53,8 +55,18 @@ describe("StakingContract", function () {
     lpToken = (await ethers.getContractAt("IERC20", lpTokenAddress)) as IERC20;
     const lpTokenBalance = await lpToken.connect(owner).balanceOf(owner.address);
 
+    let chairPerson = owner.address;
+    let minimumQuorum = 10;
+    let debatingPeriod = 3600;
+    const contractFactory: ContractFactory = await ethers.getContractFactory("DAO", owner);
+    daoContract = (await contractFactory.connect(owner).deploy(chairPerson, minimumQuorum, debatingPeriod)) as DAO;
+    await daoContract.deployed();
+
     stakingContract = (await deployContract("StakingContract", lpTokenAddress, customToken.address, 20, 3600)) as StakingContract;
     lpToken.connect(owner).approve(stakingContract.address, lpTokenBalance);
+
+    await stakingContract.setDao(daoContract.address);
+    await daoContract.setStaking(stakingContract.address);
   });
 
   describe("stake", async function () {

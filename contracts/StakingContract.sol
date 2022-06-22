@@ -3,14 +3,16 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IERC20Mintable.sol";
+import "./interfaces/IDAO.sol";
 
 contract StakingContract {
     address public owner;
-    address public _stakingTokenAddress;
-    address public _rewardTokenAddress;
-    uint256 public _rewardIntervalInSeconds;
+    address public immutable _stakingTokenAddress;
+    address public immutable _rewardTokenAddress;
+    address public _daoContract;
+    bool public isDaoInitialized;
+    uint256 public immutable _rewardIntervalInSeconds;
     uint256 public _rewardPercentage;
-    bool public _isInitialized;
 
     mapping(address => uint256) public balances;
     mapping(address => uint256) public stakeTime;
@@ -25,11 +27,15 @@ contract StakingContract {
         _rewardTokenAddress = rewardTokenAddress;
         _rewardPercentage = rewardPercentage;
         _rewardIntervalInSeconds = rewardIntervalInSeconds;
-        _isInitialized = true;
     }
 
     function getBalance(address _address) external view returns (uint) {
         return balances[_address];
+    }
+
+    function setDao(address daoContract) public {
+        _daoContract = daoContract;
+        isDaoInitialized = true;
     }
 
     function stake(uint256 amount) public {
@@ -46,6 +52,17 @@ contract StakingContract {
         _claim();
     }
 
+    function unstake() public {
+        require(block.timestamp >= getWidthdrawTimestamp(msg.sender), "Tokens are only available after dao proposals intervals has elapsed");
+        require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
+        require(balances[msg.sender] > 0, "You balance should be greater than 0");
+        _claim();
+        uint deposited = balances[msg.sender];
+        balances[msg.sender] = 0;
+        IERC20(_stakingTokenAddress).transfer(msg.sender, deposited);
+        emit TokensUnstaked(msg.sender, deposited);
+    }
+
     function _claim() private {
         uint256 rewardMultiplier = (block.timestamp - stakeTime[msg.sender]) / _rewardIntervalInSeconds;
         uint256 reward = ((balances[msg.sender] * _rewardPercentage / 100) * rewardMultiplier);
@@ -55,13 +72,8 @@ contract StakingContract {
         emit RewardsClaimed(msg.sender, reward);
     }
 
-    function unstake() public {
-        require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
-        require(balances[msg.sender] > 0, "You balance should be greater than 0");
-        _claim();
-        uint deposited = balances[msg.sender];
-        balances[msg.sender] = 0;
-        IERC20(_stakingTokenAddress).transfer(msg.sender, deposited);
-        emit TokensUnstaked(msg.sender, deposited);
+    function getWidthdrawTimestamp(address _address) public returns (uint) {
+        require(isDaoInitialized == true, "DAO Contract address should be set");
+        return IDAO(_daoContract).getWidthdrawTimestamp(_address);
     }
 }

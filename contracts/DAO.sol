@@ -15,7 +15,8 @@ contract DAO {
         bytes callData;
     }
 
-    address public immutable stakingContract;
+    bool public stakingContractIsInitialized;
+    address public stakingContract;
     address public immutable chairPerson;
     uint public immutable minimumQuorum;
     uint public immutable debatingPeriod;
@@ -39,11 +40,9 @@ contract DAO {
         _;
     }
 
-    constructor(address _stakingContract, address _chairPerson, uint _minimumQuorum, uint _debatingPeriod) {
+    constructor(address _chairPerson, uint _minimumQuorum, uint _debatingPeriod) {
         require(_chairPerson != address(0), "ChairPerson cannot be the zero address");
-        stakingContract = _stakingContract;
         chairPerson = _chairPerson;
-
         minimumQuorum = _minimumQuorum;
         debatingPeriod = _debatingPeriod;
     }
@@ -106,7 +105,13 @@ contract DAO {
         emit ProposalFinished(_proposalId);
     }
 
+    function setStaking(address _address) external {
+        stakingContract = _address;
+        stakingContractIsInitialized = true;
+    }
+
     function getWidthdrawTimestamp(address _address) external view returns (uint) {
+        require(stakingContractIsInitialized == true, "Staking Contract address should be set");
         return widthdrawTimestamp[_address];
     }
 }
