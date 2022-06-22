@@ -107,4 +107,8 @@ contract DAO {
         proposal.isFinished = true;
         emit ProposalFinished(_proposalId);
     }
+
+    function getWidthdrawTimestamp(address _address) external view returns (uint) {
+        return widthdrawTimestamp[_address];
+    }
 }
