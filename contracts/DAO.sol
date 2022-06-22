@@ -17,7 +17,6 @@ contract DAO {
 
     address public immutable stakingContract;
     address public immutable chairPerson;
-    address public immutable voteToken;
     uint public immutable minimumQuorum;
     uint public immutable debatingPeriod;
     uint private proposalId;
@@ -40,12 +39,11 @@ contract DAO {
         _;
     }
 
-    constructor(address _stakingContract, address _chairPerson, address _voteToken, uint _minimumQuorum, uint _debatingPeriod) {
+    constructor(address _stakingContract, address _chairPerson, uint _minimumQuorum, uint _debatingPeriod) {
         require(_chairPerson != address(0), "ChairPerson cannot be the zero address");
-        require(_voteToken != address(0), "VoteToken cannot be the zero address");
         stakingContract = _stakingContract;
         chairPerson = _chairPerson;
-        voteToken = _voteToken;
+
         minimumQuorum = _minimumQuorum;
         debatingPeriod = _debatingPeriod;
     }
