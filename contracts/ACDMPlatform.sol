@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./interfaces/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IERC20Burnable.sol";
+import "./interfaces/IERC20Mintable.sol";
 import "hardhat/console.sol";
 
 contract ACDMPlatform {

@@ -1,10 +1,10 @@
 //SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import "./interfaces/IERC20.sol";
-import "./interfaces/IStaking.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "./interfaces/IERC20Mintable.sol";
 
-contract StakingContract is IStaking {
+contract StakingContract {
     address public owner;
     address public _stakingTokenAddress;
     address public _rewardTokenAddress;
@@ -28,7 +28,7 @@ contract StakingContract is IStaking {
         _isInitialized = true;
     }
 
-    function getBalance(address _address) external override view returns (uint) {
+    function getBalance(address _address) external view returns (uint) {
         return balances[_address];
     }
 

@@ -2,10 +2,10 @@ import { expect } from "chai";
 import { ethers } from "hardhat";
 import { ContractFactory, Contract } from 'ethers';
 import { SignerWithAddress } from '@nomiclabs/hardhat-ethers/signers';
-import { StakingContract } from '../typechain-types/StakingContract';
-import { IUniswapV2Router02 } from "../typechain-types/interfaces/IUniswapV2Router02";
-import { IERC20 } from '../typechain-types/interfaces/IERC20';
-import { IUniswapV2Factory } from '../typechain-types/interfaces/IUniswapV2Factory';
+import { StakingContract } from '../typechain-types/contracts/StakingContract';
+import { IUniswapV2Router02 } from '../typechain-types/contracts/interfaces/IUniswapV2Router02';
+import { IERC20 } from '../typechain-types/@openzeppelin/contracts/token/ERC20/IERC20';
+import { IUniswapV2Factory } from '../typechain-types/contracts/interfaces/IUniswapV2Factory';
 import { blockTimestampTools } from "../scripts/tools";
 import { XXXToken } from '../typechain-types/contracts/XXXToken';
 
@@ -35,8 +35,7 @@ describe("StakingContract", function () {
 
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
-
-    customToken = (await deployContract("XXXToken")) as XXXToken;
+    customToken = (await deployContract("XXXToken", 10000 * 1000000)) as XXXToken;
     customToken.connect(owner).approve(UniswapV2Router02Address, 1000);
     const router: IUniswapV2Router02 = (await ethers.getContractAt("IUniswapV2Router02", UniswapV2Router02Address)) as IUniswapV2Router02;
     await router.addLiquidityETH(

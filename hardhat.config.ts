@@ -6,14 +6,12 @@ import "@nomiclabs/hardhat-waffle";
 import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
-import { erc20BasicTasks } from './tasks/ERC20BasicTasks';
 import { commonTasks } from './tasks/CommonTasks';
 import { daoTasks } from './tasks/DAOTasks';
 
 dotenv.config();
 
 commonTasks();
-erc20BasicTasks();
 daoTasks();
 
 const config: HardhatUserConfig = {
