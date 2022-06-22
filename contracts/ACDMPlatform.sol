@@ -18,6 +18,8 @@ contract ACDMPlatform {
     bool public saleIsActive;
     bool public tradingIsActive;
     address public immutable acdmToken;
+    address public owner;
+    address public editor;
     uint public immutable roundTime;
     uint public pricePerUnitInCurrentPeriod;
     uint public amountInCurrentPeriod;
@@ -40,8 +42,19 @@ contract ACDMPlatform {
     event OrderAdded(uint _amount, uint _pricePerUnit, address owner);
     event OrderRemoved(uint orderId);
 
+    modifier onlyOwner {
+        require(msg.sender == owner, "Only chairperson can call this function");
+        _;
+    }
+
+    modifier onlyEditorOrOwner() {
+        require(msg.sender == editor || msg.sender == owner, "Only editor can call this function");
+        _;
+    }
+
     constructor(address _acdmToken, uint _roundTime) {
         require(_acdmToken != address(0), "ACDM token cannot be the zero address");
+        owner = msg.sender;
         acdmToken = _acdmToken;
         roundTime = _roundTime;
         isFirstRound = true;
@@ -167,23 +180,27 @@ contract ACDMPlatform {
         return tradingWeiAmount / pricePerUnitInCurrentPeriod;
     }
 
-    function setRewardFractionForSaleRef1(uint _rewardFraction) external {
+    function setRewardFractionForSaleRef1(uint _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForSaleRef1 = _rewardFraction;
     }
 
-    function setRewardFractionForSaleRef2(uint _rewardFraction)  external {
+    function setRewardFractionForSaleRef2(uint _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForSaleRef2 = _rewardFraction;
     }
 
-    function setRewardFractionForTradeRef1(uint _rewardFraction) external {
+    function setRewardFractionForTradeRef1(uint _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForTradeRef1 = _rewardFraction;
     }
 
-    function setRewardFractionForTradeRef2(uint _rewardFraction) external {
+    function setRewardFractionForTradeRef2(uint _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForTradeRef2 = _rewardFraction;
+    }
+
+    function setEditor(address _editor) external onlyOwner {
+        editor = _editor;
     }
 }
