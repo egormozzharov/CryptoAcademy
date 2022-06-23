@@ -140,4 +140,54 @@ describe("ACDMPlatform", function () {
       await expect(await acdmToken.balanceOf(addr1.address)).to.be.equal(amount);
     });
   });
+
+  describe("Setters", function () {
+    it("Shoud set setRewardFractionForSaleRef1 successfully", async function () {
+        const value = 50;
+        await acdmPlatform.setRewardFractionForSaleRef1(value);
+        await expect(await acdmPlatform.rewardFractionForSaleRef1()).to.be.equal(value);
+    });
+
+    it("Shoud revert if setRewardFractionForSaleRef1 value is invalid", async function () {
+      const value = 1050;
+      await expect(acdmPlatform.setRewardFractionForSaleRef1(value))
+        .to.be.revertedWith("Reward fraction should be less than 1000");
+    });
+
+    it("Shoud set setRewardFractionForSaleRef2 successfully", async function () {
+      const value = 50;
+      await acdmPlatform.setRewardFractionForSaleRef2(value);
+      await expect(await acdmPlatform.rewardFractionForSaleRef2()).to.be.equal(value);
+    });
+
+    it("Shoud revert if setRewardFractionForSaleRef2 value is invalid", async function () {
+      const value = 1050;
+      await expect(acdmPlatform.setRewardFractionForSaleRef2(value))
+        .to.be.revertedWith("Reward fraction should be less than 1000");
+    });
+
+    it("Shoud set setRewardFractionForTradeRef1 successfully", async function () {
+      const value = 50;
+      await acdmPlatform.setRewardFractionForTradeRef1(value);
+      await expect(await acdmPlatform.rewardFractionForTradeRef1()).to.be.equal(value);
+    });
+
+    it("Shoud revert if setRewardFractionForTradeRef1 value is invalid", async function () {
+      const value = 1050;
+      await expect(acdmPlatform.setRewardFractionForTradeRef1(value))
+        .to.be.revertedWith("Reward fraction should be less than 1000");
+    });
+
+    it("Shoud set setRewardFractionForTradeRef2 successfully", async function () {
+      const value = 50;
+      await acdmPlatform.setRewardFractionForTradeRef2(value);
+      await expect(await acdmPlatform.rewardFractionForTradeRef2()).to.be.equal(value);
+    });
+
+    it("Shoud revert if setRewardFractionForTradeRef2 value is invalid", async function () {
+      const value = 1050;
+      await expect(acdmPlatform.setRewardFractionForTradeRef2(value))
+        .to.be.revertedWith("Reward fraction should be less than 1000");
+    });
+  });
 });
