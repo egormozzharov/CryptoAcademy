@@ -98,11 +98,11 @@ describe("ACDMPlatform", function () {
     it("Shoud buy successfully when referers are assigned", async function () {
       await acdmPlatform.register(owner.address, ethers.constants.AddressZero);
       await acdmPlatform.register(addr1.address, owner.address);
-      await expect(acdmPlatform.register(addr2.address, addr1.address))
+      await acdmPlatform.register(addr2.address, addr1.address);
 
       await acdmPlatform.startSaleRound();
-      await expect(await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
-        .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 10000);
+      await expect(await acdmPlatform.connect(addr2).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
+        .to.emit(acdmPlatform, "BuyACDM").withArgs(addr2.address, 10000);
       await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(9999990000);
     });
   });
@@ -149,7 +149,11 @@ describe("ACDMPlatform", function () {
   });
 
   describe("buyOrder", function () {
-    it("Shoud buy order successfully", async function () {
+    it("Shoud buy full order successfully", async function () {
+      await acdmPlatform.register(owner.address, ethers.constants.AddressZero);
+      await acdmPlatform.register(addr1.address, owner.address);
+      await acdmPlatform.register(addr2.address, addr1.address);
+
       const amount = 1;
       await acdmPlatform.startSaleRound();
       await blockTimestampTools.forwardTimestamp(roundInterval);
@@ -157,9 +161,28 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.startTradeRound();
       await acdmToken.approve(acdmPlatform.address, amount);
       await acdmPlatform.connect(owner).addOrder(amount, 10000000000);
-      await expect(await acdmPlatform.connect(addr1).buyOrder(0, {value: 10000000000}))
-        .to.emit(acdmPlatform, "BuyOrder").withArgs(addr1.address, amount);
-      await expect(await acdmToken.balanceOf(addr1.address)).to.be.equal(amount);
+
+      await expect(await acdmPlatform.connect(addr2).buyOrder(0, {value: 10000000000}))
+        .to.emit(acdmPlatform, "BuyOrder").withArgs(addr2.address, amount);
+      await expect(await acdmToken.balanceOf(addr2.address)).to.be.equal(amount);
+    });
+
+    it("Shoud buy part of the order successfully", async function () {
+      await acdmPlatform.register(owner.address, ethers.constants.AddressZero);
+      await acdmPlatform.register(addr1.address, owner.address);
+      await acdmPlatform.register(addr2.address, addr1.address);
+
+      const amount = 2;
+      await acdmPlatform.startSaleRound();
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") });
+      await acdmPlatform.startTradeRound();
+      await acdmToken.approve(acdmPlatform.address, amount);
+      await acdmPlatform.connect(owner).addOrder(amount, 10000000000);
+      
+      await expect(await acdmPlatform.connect(addr2).buyOrder(0, {value: 10000000000}))
+        .to.emit(acdmPlatform, "BuyOrder").withArgs(addr2.address, 1);
+      await expect(await acdmToken.balanceOf(addr2.address)).to.be.equal(1);
     });
   });
 
