@@ -31,8 +31,8 @@ describe("ACDMPlatform", function () {
   describe("Initial values", function () {
     it("Initial price should be correct", async function () {
       expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("1000000000000000000"));
-      expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(10000000);
-      expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("100000000000"));
+      expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(100000000);
+      expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("10000000000"));
       expect(await acdmPlatform.roundTime()).to.be.equal(roundInterval);
       expect(await acdmPlatform.acdmToken()).to.be.equal(acdmToken.address);
     });
@@ -54,14 +54,36 @@ describe("ACDMPlatform", function () {
   });
 
   describe("startSaleRound", function () {
-    it("Shoud start sale round successfully", async function () {
+    it("Shoud start sale round in first time successfully", async function () {
       await expect(await acdmPlatform.startSaleRound())
         .to.emit(acdmPlatform, "SaleRoundStarted");
-      expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(10000000);
-      expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("100000000000"));
+      expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("1000000000000000000"));
+      expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(100000000);
+      expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("10000000000"));
       expect(await acdmPlatform.saleIsActive()).to.be.equal(true);
       expect(await acdmPlatform.tradingIsActive()).to.be.equal(false);
       expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
+    });
+
+    it("Shoud start sale round in second time successfully", async function () {
+      const amount = 1000;
+      await acdmPlatform.startSaleRound();
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") });
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+      await acdmPlatform.startTradeRound();
+      await acdmToken.approve(acdmPlatform.address, amount);
+      await acdmPlatform.connect(owner).addOrder(amount, 10000000000);
+      await acdmPlatform.connect(addr1).buyOrder(0, {value: 10000000000000});
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+      await acdmPlatform.startSaleRound();
+
+      // assert
+      expect(await acdmPlatform.saleIsActive()).to.be.equal(true);
+      expect(await acdmPlatform.tradingIsActive()).to.be.equal(false);
+      expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
+      expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("10000000000000"));
+      expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(4000103000000);
+      expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("2"));
     });
   });
 
@@ -69,8 +91,8 @@ describe("ACDMPlatform", function () {
     it("Shoud buy successfully", async function () {
       await acdmPlatform.startSaleRound();
       await expect(await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
-        .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 100000);
-      await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(99999900000);
+        .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 10000);
+      await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(9999990000);
     });
 
     it("Shoud buy successfully when referers are assigned", async function () {
@@ -80,8 +102,8 @@ describe("ACDMPlatform", function () {
 
       await acdmPlatform.startSaleRound();
       await expect(await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
-        .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 100000);
-      await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(99999900000);
+        .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 10000);
+      await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(9999990000);
     });
   });
 

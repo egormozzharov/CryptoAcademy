@@ -59,7 +59,7 @@ contract ACDMPlatform {
         roundTime = _roundTime;
         isFirstRound = true;
         tradingWeiAmount = 1 * 10**18;
-        amountInCurrentPeriod = 100000 * 10**6;
+        amountInCurrentPeriod = 100000 * 10**5;
         pricePerUnitInCurrentPeriod = (tradingWeiAmount / amountInCurrentPeriod);
     }
 
