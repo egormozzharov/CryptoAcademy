@@ -88,6 +88,11 @@ describe("ACDMPlatform", function () {
   });
 
   describe("buyACDM", function () {
+    it("Shoud revert if sale is not active", async function () {
+      await expect(acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
+        .to.revertedWith("Sale should be active");
+    });
+
     it("Shoud buy successfully", async function () {
       await acdmPlatform.startSaleRound();
       await expect(await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
@@ -122,6 +127,11 @@ describe("ACDMPlatform", function () {
   });
 
   describe("addOrder", function () {
+    it("Shoud revert if tradint is not active", async function () {
+      await expect(acdmPlatform.connect(owner).addOrder(1, 1000000))
+        .to.revertedWith("Trading should be active");
+    });
+
     it("Shoud add order successfully", async function () {
       const amount = 1;
       await acdmPlatform.startSaleRound();
@@ -149,6 +159,11 @@ describe("ACDMPlatform", function () {
   });
 
   describe("buyOrder", function () {
+    it("Shoud revert if tradint is not active", async function () {
+      await expect(acdmPlatform.connect(owner).buyOrder(1, {value: 1000000}))
+        .to.revertedWith("Trading should be active");
+    });
+
     it("Shoud buy full order successfully", async function () {
       await acdmPlatform.register(owner.address, ethers.constants.AddressZero);
       await acdmPlatform.register(addr1.address, owner.address);

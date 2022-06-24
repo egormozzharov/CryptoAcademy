@@ -4,7 +4,6 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IERC20Burnable.sol";
 import "./interfaces/IERC20Mintable.sol";
-import "hardhat/console.sol";
 
 contract ACDMPlatform {
     struct Order {
@@ -18,7 +17,7 @@ contract ACDMPlatform {
     bool public saleIsActive;
     bool public tradingIsActive;
     address public immutable acdmToken;
-    address public owner;
+    address public immutable owner;
     address public editor;
     uint public immutable roundTime;
     uint public pricePerUnitInCurrentPeriod;
@@ -63,12 +62,18 @@ contract ACDMPlatform {
         pricePerUnitInCurrentPeriod = (tradingWeiAmount / amountInCurrentPeriod);
     }
 
+    function setEditor(address _editor) external onlyOwner {
+        editor = _editor;
+    }
+
     function register(address _newUser, address _referer) external {
         require(_newUser != address(0), "User cannot be the zero address");
         address[] storage referers = usersWithReferers[_newUser];
         if (_referer != address(0)) {
             referers.push(_referer);
-            if (usersWithReferers[_referer].length > 0) referers.push(usersWithReferers[_referer][0]);
+            if (usersWithReferers[_referer].length > 0) {
+                referers.push(usersWithReferers[_referer][0]);
+            }
         }
         emit UserRegistered(_newUser, _referer);
     }
@@ -85,6 +90,7 @@ contract ACDMPlatform {
     }
 
     function buyACDM() payable external {
+        require(saleIsActive == true, "Sale should be active");
         uint amountToBuy = msg.value / pricePerUnitInCurrentPeriod;
         require (amountInCurrentPeriod > amountToBuy, "Order amount must be greater or equal to the sender amount");
         amountInCurrentPeriod = amountInCurrentPeriod - amountToBuy;
@@ -98,14 +104,6 @@ contract ACDMPlatform {
         emit BuyACDM(msg.sender, amountToBuy);
     }
 
-    function sendSaleRewardToRef1(address[] storage referers) private {
-        payable(referers[0]).send((msg.value * rewardFractionForSaleRef1) / 1000);
-    }
-
-    function sendSaleRewardToRef2(address[] storage referers) private {
-        payable(referers[0]).send((msg.value * rewardFractionForSaleRef2) / 1000);
-    }
-
     function startTradeRound() external {
         require((block.timestamp > saleEndTime) || (amountInCurrentPeriod == 0), "Sales period is not ended yet");
         if (amountInCurrentPeriod > 0) IERC20Burnable(acdmToken).burn(address(this), amountInCurrentPeriod);
@@ -116,7 +114,7 @@ contract ACDMPlatform {
     }
 
     function addOrder(uint _amount, uint _pricePerUnit) external {
-        require(tradingIsActive == true, "Trading should be acvive");
+        require(tradingIsActive == true, "Trading should be active");
         IERC20(acdmToken).transferFrom(msg.sender, address(this), _amount);
         Order memory order = Order(
         {
@@ -137,6 +135,7 @@ contract ACDMPlatform {
     }
 
     function buyOrder(uint _orderId) payable external {
+        require(tradingIsActive == true, "Trading should be active");
         Order memory order = orders[_orderId];
         uint amountToBuy = msg.value / order.pricePerUnit;
         require (amountToBuy > 0, "Amount to buy must be greater than zero");
@@ -144,9 +143,7 @@ contract ACDMPlatform {
         if (order.amount == amountToBuy) {
             order.isProcessed = true;
             order.amount = 0;
-        } else {
-            order.amount = order.amount - amountToBuy;
-        }
+        } else order.amount = order.amount - amountToBuy;
         tradingWeiAmount = tradingWeiAmount + msg.value;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
         address[] storage referers = usersWithReferers[msg.sender];
@@ -156,28 +153,6 @@ contract ACDMPlatform {
             sendTradeRewardToRef2(referers);
         }
         emit BuyOrder(msg.sender, amountToBuy);
-    }
-
-    function sendTradeRewardToRef1(address[] storage referers) private {
-        payable(referers[0]).send((msg.value * rewardFractionForTradeRef1) / 1000);
-    }
-
-    function sendTradeRewardToRef2(address[] storage referers) private {
-        payable(referers[1]).send((msg.value * rewardFractionForTradeRef2) / 1000);
-    }
-
-    function getNextPricePerUnitInCurrentPeriod() private view returns(uint) {
-        if (isFirstRound) {
-            return pricePerUnitInCurrentPeriod;
-        }
-        return pricePerUnitInCurrentPeriod * 103 / 100 + 4 * 10**12;
-    }
-
-    function getNextAmountOfACDM() private view returns(uint) {
-        if (isFirstRound) {
-           return amountInCurrentPeriod;
-        }
-        return tradingWeiAmount / pricePerUnitInCurrentPeriod;
     }
 
     function setRewardFractionForSaleRef1(uint _rewardFraction) external onlyEditorOrOwner {
@@ -200,7 +175,29 @@ contract ACDMPlatform {
         rewardFractionForTradeRef2 = _rewardFraction;
     }
 
-    function setEditor(address _editor) external onlyOwner {
-        editor = _editor;
+    function sendSaleRewardToRef1(address[] storage referers) private {
+        payable(referers[0]).send((msg.value * rewardFractionForSaleRef1) / 1000);
+    }
+
+    function sendSaleRewardToRef2(address[] storage referers) private {
+        payable(referers[0]).send((msg.value * rewardFractionForSaleRef2) / 1000);
+    }
+
+    function sendTradeRewardToRef1(address[] storage referers) private {
+        payable(referers[0]).send((msg.value * rewardFractionForTradeRef1) / 1000);
+    }
+
+    function sendTradeRewardToRef2(address[] storage referers) private {
+        payable(referers[1]).send((msg.value * rewardFractionForTradeRef2) / 1000);
+    }
+
+    function getNextPricePerUnitInCurrentPeriod() private view returns(uint) {
+        if (isFirstRound) return pricePerUnitInCurrentPeriod;
+        return pricePerUnitInCurrentPeriod * 103 / 100 + 4 * 10**12;
+    }
+
+    function getNextAmountOfACDM() private view returns(uint) {
+        if (isFirstRound) return amountInCurrentPeriod;
+        return tradingWeiAmount / pricePerUnitInCurrentPeriod;
     }
 }
