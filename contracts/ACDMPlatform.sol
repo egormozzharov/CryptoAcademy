@@ -5,6 +5,8 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IERC20Burnable.sol";
 import "./interfaces/IERC20Mintable.sol";
 
+import "hardhat/console.sol";
+
 contract ACDMPlatform {
     struct Order {
         bool isProcessed;
@@ -85,6 +87,7 @@ contract ACDMPlatform {
         isFirstRound = false;
         tradingIsActive = false;
         saleIsActive = true;
+        saleEndTime = block.timestamp + roundTime;
         IERC20Mintable(acdmToken).mint(address(this), amountInCurrentPeriod);
         emit SaleRoundStarted();
     }
@@ -92,7 +95,7 @@ contract ACDMPlatform {
     function buyACDM() payable external {
         require(saleIsActive == true, "Sale should be active");
         uint amountToBuy = msg.value / pricePerUnitInCurrentPeriod;
-        require (amountInCurrentPeriod > amountToBuy, "Order amount must be greater or equal to the sender amount");
+        require (amountInCurrentPeriod >= amountToBuy, "Order amount must be greater or equal to the sender amount");
         amountInCurrentPeriod = amountInCurrentPeriod - amountToBuy;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
         address[] storage referers = usersWithReferers[msg.sender];
@@ -110,6 +113,7 @@ contract ACDMPlatform {
         saleIsActive = false;
         tradingIsActive = true;
         tradingWeiAmount = 0;
+        tradingEndTime = block.timestamp + roundTime;
         emit TradeRoundStarted();
     }
 

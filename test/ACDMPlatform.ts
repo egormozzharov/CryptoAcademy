@@ -63,6 +63,7 @@ describe("ACDMPlatform", function () {
       expect(await acdmPlatform.saleIsActive()).to.be.equal(true);
       expect(await acdmPlatform.tradingIsActive()).to.be.equal(false);
       expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
+      expect(await acdmToken.balanceOf(acdmPlatform.address)).to.be.equal(await acdmPlatform.amountInCurrentPeriod());
     });
 
     it("Shoud start sale round in second time successfully", async function () {
@@ -84,6 +85,7 @@ describe("ACDMPlatform", function () {
       expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("10000000000000"));
       expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(4000103000000);
       expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("2"));
+      expect(await acdmPlatform.saleEndTime()).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
     });
   });
 
@@ -93,36 +95,83 @@ describe("ACDMPlatform", function () {
         .to.revertedWith("Sale should be active");
     });
 
+    it("Shoud revert if order amount is greater that amount in current period", async function () {
+      await acdmPlatform.startSaleRound();
+      await expect(acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("2") }))
+        .to.revertedWith("Order amount must be greater or equal to the sender amount");
+    });
+
     it("Shoud buy successfully", async function () {
       await acdmPlatform.startSaleRound();
       await expect(await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
         .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 10000);
       await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(9999990000);
+      expect(await ethers.provider.getBalance(acdmPlatform.address)).to.be.equal(ethers.utils.parseEther("0.000001"));
     });
 
-    it("Shoud buy successfully when referers are assigned", async function () {
-      await acdmPlatform.register(owner.address, ethers.constants.AddressZero);
-      await acdmPlatform.register(addr1.address, owner.address);
-      await acdmPlatform.register(addr2.address, addr1.address);
-
-      await acdmPlatform.startSaleRound();
-      await expect(await acdmPlatform.connect(addr2).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
+    it("Shoud buy successfully when 1 level of referers are assigned", async function () {
+      let address = addr2;
+      await acdmPlatform.connect(address).register(addr1.address, ethers.constants.AddressZero);
+      await acdmPlatform.connect(address).register(addr2.address, addr1.address);
+      await acdmPlatform.connect(address).startSaleRound();
+      let addr1InitialBalance = await ethers.provider.getBalance(addr1.address);
+      await expect(await acdmPlatform.connect(address).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
         .to.emit(acdmPlatform, "BuyACDM").withArgs(addr2.address, 10000);
-      await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(9999990000);
+      expect(await ethers.provider.getBalance(acdmPlatform.address)).to.be.equal(ethers.utils.parseEther("0.00000095"));
+      let addr1CurrentBalance = await ethers.provider.getBalance(addr1.address);
+      expect(addr1CurrentBalance.sub(addr1InitialBalance)).to.be.equal(ethers.utils.parseEther("0.00000005"));
+    });
+
+    it("Shoud buy successfully when 2 levels of referers are assigned", async function () {
+      let address = addr2;
+      await acdmPlatform.connect(address).register(owner.address, ethers.constants.AddressZero);
+      await acdmPlatform.connect(address).register(addr1.address, owner.address);
+      await acdmPlatform.connect(address).register(addr2.address, addr1.address);
+      await acdmPlatform.connect(address).startSaleRound();
+      let addr1InitialBalance = await ethers.provider.getBalance(addr1.address);
+      let ownerInitialBalance = await ethers.provider.getBalance(owner.address);
+      await expect(await acdmPlatform.connect(address).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
+        .to.emit(acdmPlatform, "BuyACDM").withArgs(addr2.address, 10000);
+      expect(await ethers.provider.getBalance(acdmPlatform.address)).to.be.equal(ethers.utils.parseEther("0.00000092"));
+      let addr1CurrentBalance = await ethers.provider.getBalance(addr1.address);
+      let ownerCurrentBalance = await ethers.provider.getBalance(owner.address);
+      expect(addr1CurrentBalance.sub(addr1InitialBalance)).to.be.equal(ethers.utils.parseEther("0.00000005"));
+      expect(ownerCurrentBalance.sub(ownerInitialBalance)).to.be.equal(ethers.utils.parseEther("0.00000003"));
     });
   });
 
   describe("startTradeRound", function () {
+    it("Shoud revert if sales period is not ended yet", async function () {
+      await acdmPlatform.startSaleRound();
+      await expect(acdmPlatform.connect(owner).startTradeRound())
+        .to.revertedWith("Sales period is not ended yet");
+    });
+
+    it("Shoud start trade round if sales period is not ended yet but the tokens amount is zero", async function () {
+      await acdmPlatform.startSaleRound();
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("1") });
+      await acdmPlatform.connect(owner).startTradeRound();
+    });
+
     it("Shoud start trade round successfully", async function () {
       await acdmPlatform.startSaleRound();
       await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") });
       await blockTimestampTools.forwardTimestamp(roundInterval);
-
+      
       await expect(await acdmPlatform.startTradeRound())
         .to.emit(acdmPlatform, "TradeRoundStarted");
       await expect(await acdmPlatform.saleIsActive()).to.be.equal(false);
       await expect(await acdmPlatform.tradingIsActive()).to.be.equal(true);
       await expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(0);
+      await expect(await acdmPlatform.tradingEndTime()).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
+    });
+
+    it("Shoud burn remaining tokens after sale round", async function () {
+      await acdmPlatform.startSaleRound();
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") });
+      await acdmPlatform.startTradeRound();
+      await expect(await acdmToken.balanceOf(acdmPlatform.address)).to.be.equal(0);
     });
   });
 
@@ -159,7 +208,7 @@ describe("ACDMPlatform", function () {
   });
 
   describe("buyOrder", function () {
-    it("Shoud revert if tradint is not active", async function () {
+    it("Shoud revert if trading is not active", async function () {
       await expect(acdmPlatform.connect(owner).buyOrder(1, {value: 1000000}))
         .to.revertedWith("Trading should be active");
     });

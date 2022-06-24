@@ -2,9 +2,9 @@
 pragma solidity ^0.8.0;
 
 import "./interfaces/IStaking.sol";
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract DAO {
+contract DAO is ReentrancyGuard {
     struct Proposal {
         bool isFinished;
         address recipient;
@@ -109,7 +109,7 @@ contract DAO {
         return widthdrawTimestamp[_address];
     }
 
-    function getDeposit(address _address) private returns(uint) {
+    function getDeposit(address _address) private nonReentrant() returns(uint) {
         require(stakingContractIsInitialized == true, "Staking Contract address should be set");
         uint deposit = IStaking(stakingContract).getBalance(_address);
         return deposit;

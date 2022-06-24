@@ -2,10 +2,11 @@
 pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "./interfaces/IERC20Mintable.sol";
 import "./interfaces/IDAO.sol";
 
-contract StakingContract {
+contract StakingContract is ReentrancyGuard {
     address public owner;
     address public immutable _stakingTokenAddress;
     address public immutable _rewardTokenAddress;
@@ -72,7 +73,7 @@ contract StakingContract {
         emit RewardsClaimed(msg.sender, reward);
     }
 
-    function getWidthdrawTimestamp(address _address) private returns (uint) {
+    function getWidthdrawTimestamp(address _address) private nonReentrant() returns (uint) {
         require(isDaoInitialized == true, "DAO Contract address should be set");
         return IDAO(_daoContract).getWidthdrawTimestamp(_address);
     }
