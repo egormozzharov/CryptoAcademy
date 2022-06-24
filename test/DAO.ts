@@ -83,14 +83,12 @@ describe("DAO", function () {
     const acdmPlatformContractFactory: ContractFactory = await ethers.getContractFactory("ACDMPlatform");
     acdmPlatform = (await acdmPlatformContractFactory.connect(owner).deploy(acdmToken.address, roundInterval)) as ACDMPlatform;
     await acdmToken.deployed();
-
-    // Common
-    await stakingContract.setDao(daoContract.address);
-    await daoContract.setStaking(stakingContract.address);
   });
 
   describe("addProposal", function () {
     it("Shoud add proposal successfully", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       let description = "description";
       let callData = getExternalContractCallData(50);
       let recipient = stakingContract.address;
@@ -99,13 +97,22 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if reciever is zero address", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await expect(daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), ethers.constants.AddressZero))
         .to.be.revertedWith("Recipient cannot be the zero address");
     });
   });
 
   describe("voteProposal", function () {
+    it("Shoud revert if staking contract is not initialized", async function () {
+      await expect(daoContract.connect(owner).voteProposal(1, true))
+        .to.revertedWith("Staking Contract address should be set");
+    });
+
     it("Shoud vote proposal successfully with positive vote", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       let proposalId = 1;
       let description = "description";
       let callData = getExternalContractCallData(50);
@@ -119,6 +126,8 @@ describe("DAO", function () {
     });
 
     it("Shoud vote proposal successfully with negative vote", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       let proposalId = 1;
       let description = "description";
       let callData = getExternalContractCallData(50);
@@ -132,12 +141,16 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if you have no deposit yet", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await expect(daoContract.connect(owner).voteProposal(1, true))
         .to.be.revertedWith("You must have a deposit to vote");
     });
 
     it("Shoud fail if you have already voted on this proposal", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await stakingContract.connect(owner).stake(100);
       await daoContract.connect(owner).voteProposal(1, true);
@@ -146,6 +159,8 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the proposal already finished", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await lpToken.connect(owner).transfer(addr1.address, 100);
       await stakingContract.connect(owner).stake(100);
@@ -162,6 +177,8 @@ describe("DAO", function () {
 
   describe("finishProposal", function () {
     it("Shoud finish proposal successfully", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       let proposalId = 1;
       let amount = 50;
       let callData = getExternalContractCallData(amount);
@@ -180,6 +197,8 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the proposal already finished", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await stakingContract.connect(owner).stake(100);
       await stakingContract.connect(addr1).stake(100);
@@ -193,6 +212,8 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the dabating period has not ended yet", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await acdmPlatform.connect(owner).setEditor(daoContract.address);
       await expect(daoContract.finishProposal(1))
@@ -200,6 +221,8 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the quorum conditions are not met", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await blockTimestampTools.forwardTimestamp(3600);
       await acdmPlatform.connect(owner).setEditor(daoContract.address);
@@ -209,6 +232,8 @@ describe("DAO", function () {
     });
 
     it("Shoud fail if the external contract call is reverted", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("description", getExternalContractCallData(50), acdmPlatform.address);
       await stakingContract.connect(owner).stake(100);
       await stakingContract.connect(addr1).stake(100);

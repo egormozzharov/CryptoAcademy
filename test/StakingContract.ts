@@ -84,18 +84,19 @@ describe("StakingContract", function () {
     acdmPlatform = (await acdmPlatformContractFactory.connect(owner).deploy(acdmToken.address, roundInterval)) as ACDMPlatform;
     await acdmToken.deployed();
 
-    // Common
-    await stakingContract.setDao(daoContract.address);
-    await daoContract.setStaking(stakingContract.address);
    });
 
   describe("stake", async function () {
     it("Should revert if already have a stake", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await stakingContract.connect(owner).stake(100);
       await expect(stakingContract.connect(owner).stake(100)).to.be.revertedWith("You already have tokens staked");
     });
 
     it("Shoud stake succsesfully", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await expect(await stakingContract.connect(owner).stake(100))
       .to.emit(stakingContract, "TokensStaked").withArgs(owner.address, 100);
       expect(await stakingContract.connect(owner).balances(owner.address)).to.eq(100);
@@ -103,7 +104,19 @@ describe("StakingContract", function () {
   });
 
   describe("unstake", function () {
+    it("Shoud revert when DAO contract is not initialized", async function () {
+      await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("DAO Contract address should be set");
+    });
+
+    it("Shoud revert when your balance equals zero", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
+      await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("You balance should be greater than 0");
+    });
+
     it("Shoud revert when tokens are locked by an acrive DAO proposal", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("Description", getExternalContractCallData(50), acdmPlatform.address);
       await stakingContract.connect(owner).stake(100);
       await daoContract.connect(owner).voteProposal(1, true);
@@ -111,15 +124,21 @@ describe("StakingContract", function () {
     });
 
     it("Shoud revert when timestamp is greater that reward time", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await stakingContract.connect(owner).stake(100);
       await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("Tokens are only available after correct time period has elapsed");
     });
 
     it("Shoud revert when your balance equals zero", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("You balance should be greater than 0");
     });
     
     it("Shoud unstake succsesfully", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await stakingContract.connect(owner).stake(100);
       await blockTimestampTools.forwardTimestamp(3600);
       await expect(await stakingContract.connect(owner).unstake())
@@ -130,15 +149,21 @@ describe("StakingContract", function () {
 
   describe("claim", function () {
     it("Shoud revert if reward period has not elapsed", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await stakingContract.connect(owner).stake(100);
       await expect(stakingContract.connect(owner).claim()).to.be.revertedWith("Tokens are only available after correct time period has elapsed");
     });
 
     it("Shoud revert when your balance equals zero", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await expect(stakingContract.connect(owner).claim()).to.be.revertedWith("You balance should be greater than 0");
     });
 
     it("Should claim successfully", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await stakingContract.connect(owner).stake(100);
       await blockTimestampTools.forwardTimestamp(4000);
       expect(await stakingContract.connect(owner).claim())
@@ -146,6 +171,8 @@ describe("StakingContract", function () {
     });
 
     it("Should claim successfully after multiple rewards periods", async function () {
+      await stakingContract.setDao(daoContract.address);
+      await daoContract.setStaking(stakingContract.address);
       await stakingContract.connect(owner).stake(100);
       await blockTimestampTools.forwardTimestamp(9000);
       expect(await stakingContract.connect(owner).claim())

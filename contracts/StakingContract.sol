@@ -33,12 +33,12 @@ contract StakingContract {
         return balances[_address];
     }
 
-    function setDao(address daoContract) public {
+    function setDao(address daoContract) external {
         _daoContract = daoContract;
         isDaoInitialized = true;
     }
 
-    function stake(uint256 amount) public {
+    function stake(uint256 amount) external {
         require(balances[msg.sender] == 0, "You already have tokens staked");
         _claim();
         IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
@@ -46,13 +46,13 @@ contract StakingContract {
         emit TokensStaked(msg.sender, amount);
     }
 
-    function claim() public {
+    function claim() external {
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
         _claim();
     }
 
-    function unstake() public {
+    function unstake() external {
         require(block.timestamp >= getWidthdrawTimestamp(msg.sender), "Tokens are only available after dao proposals intervals has elapsed");
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
@@ -72,7 +72,7 @@ contract StakingContract {
         emit RewardsClaimed(msg.sender, reward);
     }
 
-    function getWidthdrawTimestamp(address _address) public returns (uint) {
+    function getWidthdrawTimestamp(address _address) private returns (uint) {
         require(isDaoInitialized == true, "DAO Contract address should be set");
         return IDAO(_daoContract).getWidthdrawTimestamp(_address);
     }

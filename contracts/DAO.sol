@@ -77,11 +77,6 @@ contract DAO {
         emit ProposalVoted(_proposalId, isPositive, msg.sender, getDeposit(msg.sender));
     }
 
-    function getDeposit(address _address) private returns(uint) {
-        uint deposit = IStaking(stakingContract).getBalance(_address);
-        return deposit;
-    }
-
     function finishProposal(uint _proposalId) external {
         Proposal storage proposal = proposals[_proposalId];
         require(proposal.isFinished == false, "Proposal is already finished");
@@ -111,7 +106,12 @@ contract DAO {
     }
 
     function getWidthdrawTimestamp(address _address) external view returns (uint) {
-        require(stakingContractIsInitialized == true, "Staking Contract address should be set");
         return widthdrawTimestamp[_address];
+    }
+
+    function getDeposit(address _address) private returns(uint) {
+        require(stakingContractIsInitialized == true, "Staking Contract address should be set");
+        uint deposit = IStaking(stakingContract).getBalance(_address);
+        return deposit;
     }
 }
