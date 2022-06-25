@@ -53,7 +53,7 @@ contract StakingContract is ReentrancyGuard {
     }
 
     function unstake() external {
-        require(block.timestamp >= getWidthdrawTimestamp(msg.sender), "Tokens are only available after dao proposals intervals has elapsed");
+        require(block.timestamp >= lastVotingEndTime(msg.sender), "Tokens are only available after dao proposals intervals has elapsed");
         require(block.timestamp >= stakeTime[msg.sender] + _rewardIntervalInSeconds, "Tokens are only available after correct time period has elapsed");
         require(balances[msg.sender] > 0, "You balance should be greater than 0");
         _claim();
@@ -72,8 +72,8 @@ contract StakingContract is ReentrancyGuard {
         emit RewardsClaimed(msg.sender, reward);
     }
 
-    function getWidthdrawTimestamp(address _address) private nonReentrant() returns (uint) {
+    function lastVotingEndTime(address _address) private nonReentrant() returns (uint) {
         require(_daoContract != address(0), "DAO Contract address should be set");
-        return IDAO(_daoContract).getWidthdrawTimestamp(_address);
+        return IDAO(_daoContract).lastVotingEndTime(_address);
     }
 }

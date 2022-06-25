@@ -105,7 +105,7 @@ contract DAO is ReentrancyGuard {
         stakingContractIsInitialized = true;
     }
 
-    function getWidthdrawTimestamp(address _address) external view returns (uint) {
+    function lastVotingEndTime(address _address) external view returns (uint) {
         return widthdrawTimestamp[_address];
     }
 
