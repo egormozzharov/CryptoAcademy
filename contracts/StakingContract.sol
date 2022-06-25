@@ -7,12 +7,12 @@ import "./interfaces/IERC20Mintable.sol";
 import "./interfaces/IDAO.sol";
 
 contract StakingContract is ReentrancyGuard {
-    address public owner;
+    uint256 public immutable _rewardIntervalInSeconds;
     address public immutable _stakingTokenAddress;
     address public immutable _rewardTokenAddress;
+    address public owner;
     address public _daoContract;
     bool public isDaoInitialized;
-    uint256 public immutable _rewardIntervalInSeconds;
     uint256 public _rewardPercentage;
 
     mapping(address => uint256) public balances;
@@ -30,13 +30,12 @@ contract StakingContract is ReentrancyGuard {
         _rewardIntervalInSeconds = rewardIntervalInSeconds;
     }
 
-    function getBalance(address _address) external view returns (uint) {
+    function balanceOf(address _address) external view returns (uint) {
         return balances[_address];
     }
 
     function setDao(address daoContract) external {
         _daoContract = daoContract;
-        isDaoInitialized = true;
     }
 
     function stake(uint256 amount) external {
@@ -74,7 +73,7 @@ contract StakingContract is ReentrancyGuard {
     }
 
     function getWidthdrawTimestamp(address _address) private nonReentrant() returns (uint) {
-        require(isDaoInitialized == true, "DAO Contract address should be set");
+        require(_daoContract != address(0), "DAO Contract address should be set");
         return IDAO(_daoContract).getWidthdrawTimestamp(_address);
     }
 }

@@ -111,7 +111,7 @@ contract DAO is ReentrancyGuard {
 
     function getDeposit(address _address) private nonReentrant() returns(uint) {
         require(stakingContractIsInitialized == true, "Staking Contract address should be set");
-        uint deposit = IStaking(stakingContract).getBalance(_address);
+        uint deposit = IStaking(stakingContract).balanceOf(_address);
         return deposit;
     }
 }
