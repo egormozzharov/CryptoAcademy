@@ -15,9 +15,10 @@ contract ACDMPlatform {
         uint pricePerUnit;
     }
 
+    enum RoundState { Sale, Trading }
+
+    RoundState public roundState;
     bool public isFirstRound;
-    bool public saleIsActive;
-    bool public tradingIsActive;
     address public immutable acdmToken;
     address public immutable owner;
     address public editor;
@@ -85,15 +86,14 @@ contract ACDMPlatform {
         pricePerUnitInCurrentPeriod = getNextPricePerUnitInCurrentPeriod();
         amountInCurrentPeriod = getNextAmountOfACDM();
         isFirstRound = false;
-        tradingIsActive = false;
-        saleIsActive = true;
+        roundState = RoundState.Sale;
         saleEndTime = block.timestamp + roundTime;
         IERC20Mintable(acdmToken).mint(address(this), amountInCurrentPeriod);
         emit SaleRoundStarted();
     }
 
     function buyACDM() payable external {
-        require(saleIsActive == true, "Sale should be active");
+        require(roundState == RoundState.Sale, "Sale should be active");
         uint amountToBuy = msg.value / pricePerUnitInCurrentPeriod;
         require (amountInCurrentPeriod >= amountToBuy, "Order amount must be greater or equal to the sender amount");
         amountInCurrentPeriod = amountInCurrentPeriod - amountToBuy;
@@ -110,15 +110,14 @@ contract ACDMPlatform {
     function startTradeRound() external {
         require((block.timestamp > saleEndTime) || (amountInCurrentPeriod == 0), "Sales period is not ended yet");
         if (amountInCurrentPeriod > 0) IERC20Burnable(acdmToken).burn(address(this), amountInCurrentPeriod);
-        saleIsActive = false;
-        tradingIsActive = true;
+        roundState = RoundState.Trading;
         tradingWeiAmount = 0;
         tradingEndTime = block.timestamp + roundTime;
         emit TradeRoundStarted();
     }
 
     function addOrder(uint _amount, uint _pricePerUnit) external {
-        require(tradingIsActive == true, "Trading should be active");
+        require(roundState == RoundState.Trading, "Trading should be active");
         IERC20(acdmToken).transferFrom(msg.sender, address(this), _amount);
         Order memory order = Order(
         {
@@ -139,7 +138,7 @@ contract ACDMPlatform {
     }
 
     function buyOrder(uint _orderId) payable external {
-        require(tradingIsActive == true, "Trading should be active");
+        require(roundState == RoundState.Trading, "Trading should be active");
         Order memory order = orders[_orderId];
         uint amountToBuy = msg.value / order.pricePerUnit;
         require (amountToBuy > 0, "Amount to buy must be greater than zero");

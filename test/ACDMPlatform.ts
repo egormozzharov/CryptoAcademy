@@ -60,8 +60,7 @@ describe("ACDMPlatform", function () {
       expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("1000000000000000000"));
       expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(100000000);
       expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("10000000000"));
-      expect(await acdmPlatform.saleIsActive()).to.be.equal(true);
-      expect(await acdmPlatform.tradingIsActive()).to.be.equal(false);
+      expect(await acdmPlatform.roundState()).to.be.equal(0);
       expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
       expect(await acdmToken.balanceOf(acdmPlatform.address)).to.be.equal(await acdmPlatform.amountInCurrentPeriod());
     });
@@ -79,8 +78,7 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.startSaleRound();
 
       // assert
-      expect(await acdmPlatform.saleIsActive()).to.be.equal(true);
-      expect(await acdmPlatform.tradingIsActive()).to.be.equal(false);
+      expect(await acdmPlatform.roundState()).to.be.equal(0);
       expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
       expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("10000000000000"));
       expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(4000103000000);
@@ -91,6 +89,10 @@ describe("ACDMPlatform", function () {
 
   describe("buyACDM", function () {
     it("Shoud revert if sale is not active", async function () {
+      await acdmPlatform.startSaleRound();
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") });
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+      await acdmPlatform.startTradeRound();
       await expect(acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
         .to.revertedWith("Sale should be active");
     });
@@ -160,8 +162,7 @@ describe("ACDMPlatform", function () {
       
       await expect(await acdmPlatform.startTradeRound())
         .to.emit(acdmPlatform, "TradeRoundStarted");
-      await expect(await acdmPlatform.saleIsActive()).to.be.equal(false);
-      await expect(await acdmPlatform.tradingIsActive()).to.be.equal(true);
+        expect(await acdmPlatform.roundState()).to.be.equal(1);
       await expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(0);
       await expect(await acdmPlatform.tradingEndTime()).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
     });
