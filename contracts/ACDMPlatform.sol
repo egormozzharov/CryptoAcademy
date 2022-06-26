@@ -140,11 +140,10 @@ contract ACDMPlatform {
         uint amountToBuy = msg.value / order.pricePerUnit;
         require (amountToBuy > 0, "Amount to buy must be greater than zero");
         require (order.amount >= amountToBuy, "Order amount must be greater or equal to the sender amount");
-        if (order.amount == amountToBuy) {
+        if (order.amount == amountToBuy) 
             delete orders[_orderId];
-        } else {
-            order.amount -= amountToBuy;
-        }
+        else
+             order.amount -= amountToBuy;
         tradingWeiAmount += msg.value;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
         address firstLevelRef = userReferer[msg.sender];
