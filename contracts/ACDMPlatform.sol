@@ -9,7 +9,6 @@ import "hardhat/console.sol";
 
 contract ACDMPlatform {
     struct Order {
-        bool isProcessed;
         address owner;
         uint amount;
         uint pricePerUnit;
@@ -115,8 +114,7 @@ contract ACDMPlatform {
         {
             amount: _amount,
             pricePerUnit: _pricePerUnit,
-            owner: msg.sender,
-            isProcessed: false
+            owner: msg.sender
         });
         orders.push(order);
         emit OrderAdded(_amount, _pricePerUnit, msg.sender);
@@ -136,8 +134,7 @@ contract ACDMPlatform {
         require (amountToBuy > 0, "Amount to buy must be greater than zero");
         require (order.amount >= amountToBuy, "Order amount must be greater or equal to the sender amount");
         if (order.amount == amountToBuy) {
-            order.isProcessed = true;
-            order.amount = 0;
+            delete orders[_orderId];
         } else {
             order.amount -= amountToBuy;
         }
