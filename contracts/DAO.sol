@@ -15,11 +15,10 @@ contract DAO is ReentrancyGuard {
         bytes callData;
     }
 
-    bool public stakingContractIsInitialized;
-    address public stakingContract;
-    address public immutable chairPerson;
     uint public immutable minimumQuorum;
     uint public immutable debatingPeriod;
+    address public immutable chairPerson;
+    address public stakingContract;
     uint private proposalId;
 
     mapping(uint => Proposal) public proposals;
@@ -64,17 +63,18 @@ contract DAO is ReentrancyGuard {
 
     function voteProposal(uint _proposalId, bool isPositive) external {
         Proposal storage proposal = proposals[_proposalId];
-        require(getDeposit(msg.sender) > 0, "You must have a deposit to vote");
+        uint deposit = getDeposit(msg.sender);
+        require(deposit > 0, "You must have a deposit to vote");
         require(votedForProposal[proposalId][msg.sender] == false, "You have already voted on this proposal");
         require(!proposal.isFinished, "Proposal is already finished");
         if (isPositive)
-            proposal.positiveVotes += getDeposit(msg.sender);
+            proposal.positiveVotes += deposit;
         else 
-            proposal.negativeVotes += getDeposit(msg.sender);
+            proposal.negativeVotes += deposit;
         if (proposal.finishTime > widthdrawTimestamp[msg.sender])
             widthdrawTimestamp[msg.sender] = proposal.finishTime;
         votedForProposal[proposalId][msg.sender] = true;
-        emit ProposalVoted(_proposalId, isPositive, msg.sender, getDeposit(msg.sender));
+        emit ProposalVoted(_proposalId, isPositive, msg.sender, deposit);
     }
 
     function finishProposal(uint _proposalId) external {
@@ -102,7 +102,6 @@ contract DAO is ReentrancyGuard {
 
     function setStaking(address _address) external {
         stakingContract = _address;
-        stakingContractIsInitialized = true;
     }
 
     function lastVotingEndTime(address _address) external view returns (uint) {
@@ -110,7 +109,7 @@ contract DAO is ReentrancyGuard {
     }
 
     function getDeposit(address _address) private nonReentrant() returns(uint) {
-        require(stakingContractIsInitialized == true, "Staking Contract address should be set");
+        require(stakingContract != address(0), "Staking Contract address should be set");
         uint deposit = IStaking(stakingContract).balanceOf(_address);
         return deposit;
     }

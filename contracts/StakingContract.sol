@@ -66,7 +66,7 @@ contract StakingContract is ReentrancyGuard {
     function _claim() private {
         uint256 rewardMultiplier = (block.timestamp - stakeTime[msg.sender]) / _rewardIntervalInSeconds;
         uint256 reward = ((balances[msg.sender] * _rewardPercentage / 100) * rewardMultiplier);
-        stakeTime[msg.sender]  += rewardMultiplier * _rewardIntervalInSeconds
+        stakeTime[msg.sender]  += rewardMultiplier * _rewardIntervalInSeconds;
         IERC20Mintable(_rewardTokenAddress).mint(address(this), reward);
         IERC20(_rewardTokenAddress).transfer(msg.sender, reward);
         emit RewardsClaimed(msg.sender, reward);
