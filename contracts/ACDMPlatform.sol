@@ -17,12 +17,12 @@ contract ACDMPlatform {
 
     enum RoundState { Sale, Trading }
 
-    RoundState public roundState;
-    bool public isFirstRound;
+    uint public immutable roundTime;
     address public immutable acdmToken;
     address public immutable owner;
     address public editor;
-    uint public immutable roundTime;
+    RoundState public roundState;
+    bool public isFirstRound;
     uint public pricePerUnitInCurrentPeriod;
     uint public amountInCurrentPeriod;
     uint public tradingWeiAmount;
@@ -34,7 +34,7 @@ contract ACDMPlatform {
     uint public rewardFractionForTradeRef2 = 25;
 
     Order[] public orders;
-    mapping (address => address[]) public usersWithReferers;
+    mapping (address => address) public userReferer;
 
     event UserRegistered(address _newUser, address _referer);
     event SaleRoundStarted();
@@ -71,13 +71,7 @@ contract ACDMPlatform {
 
     function register(address _newUser, address _referer) external {
         require(_newUser != address(0), "User cannot be the zero address");
-        address[] storage referers = usersWithReferers[_newUser];
-        if (_referer != address(0)) {
-            referers.push(_referer);
-            if (usersWithReferers[_referer].length > 0) {
-                referers.push(usersWithReferers[_referer][0]);
-            }
-        }
+        userReferer[_newUser] = _referer;
         emit UserRegistered(_newUser, _referer);
     }
 
@@ -98,12 +92,10 @@ contract ACDMPlatform {
         require (amountInCurrentPeriod >= amountToBuy, "Order amount must be greater or equal to the sender amount");
         amountInCurrentPeriod = amountInCurrentPeriod - amountToBuy;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
-        address[] storage referers = usersWithReferers[msg.sender];
-        if (referers.length == 1) sendSaleRewardToRef1(referers);
-        if (referers.length == 2) { 
-            sendSaleRewardToRef1(referers);
-            sendSaleRewardToRef2(referers);
-        }
+        address firstLevelRef = userReferer[msg.sender];
+        address secondLevelRef = userReferer[firstLevelRef];
+        if (firstLevelRef != address(0)) sendSaleRewardToRef1(firstLevelRef);
+        if (secondLevelRef != address(0)) sendSaleRewardToRef2(secondLevelRef);
         emit BuyACDM(msg.sender, amountToBuy);
     }
 
@@ -149,12 +141,10 @@ contract ACDMPlatform {
         } else order.amount = order.amount - amountToBuy;
         tradingWeiAmount = tradingWeiAmount + msg.value;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
-        address[] storage referers = usersWithReferers[msg.sender];
-        if (referers.length == 1) sendTradeRewardToRef1(referers);
-        if (referers.length == 2) {
-            sendTradeRewardToRef1(referers);
-            sendTradeRewardToRef2(referers);
-        }
+        address firstLevelRef = userReferer[msg.sender];
+        address secondLevelRef = userReferer[firstLevelRef];
+        if (firstLevelRef != address(0)) sendTradeRewardToRef1(firstLevelRef);
+        if (secondLevelRef != address(0)) sendTradeRewardToRef2(secondLevelRef);
         emit BuyOrder(msg.sender, amountToBuy);
     }
 
@@ -178,20 +168,20 @@ contract ACDMPlatform {
         rewardFractionForTradeRef2 = _rewardFraction;
     }
 
-    function sendSaleRewardToRef1(address[] storage referers) private {
-        payable(referers[0]).send((msg.value * rewardFractionForSaleRef1) / 1000);
+    function sendSaleRewardToRef1(address referer) private {
+        payable(referer).send((msg.value * rewardFractionForSaleRef1) / 1000);
     }
 
-    function sendSaleRewardToRef2(address[] storage referers) private {
-        payable(referers[0]).send((msg.value * rewardFractionForSaleRef2) / 1000);
+    function sendSaleRewardToRef2(address referer) private {
+        payable(referer).send((msg.value * rewardFractionForSaleRef2) / 1000);
     }
 
-    function sendTradeRewardToRef1(address[] storage referers) private {
-        payable(referers[0]).send((msg.value * rewardFractionForTradeRef1) / 1000);
+    function sendTradeRewardToRef1(address referer) private {
+        payable(referer).send((msg.value * rewardFractionForTradeRef1) / 1000);
     }
 
-    function sendTradeRewardToRef2(address[] storage referers) private {
-        payable(referers[1]).send((msg.value * rewardFractionForTradeRef2) / 1000);
+    function sendTradeRewardToRef2(address referer) private {
+        payable(referer).send((msg.value * rewardFractionForTradeRef2) / 1000);
     }
 
     function getNextPricePerUnitInCurrentPeriod() private view returns(uint) {

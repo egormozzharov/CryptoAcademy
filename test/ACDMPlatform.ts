@@ -45,8 +45,8 @@ describe("ACDMPlatform", function () {
       await expect(acdmPlatform.register(addr2.address, addr1.address))
         .to.emit(acdmPlatform, "UserRegistered").withArgs(addr2.address, addr1.address);
 
-      let referer1 = await acdmPlatform.usersWithReferers(addr2.address, 0);
-      let referer2 = await acdmPlatform.usersWithReferers(addr2.address, 1);
+      let referer1 = await acdmPlatform.userReferer(addr2.address);
+      let referer2 = await acdmPlatform.userReferer(referer1);
 
       expect(referer1).to.equal(addr1.address);
       expect(referer2).to.equal(owner.address);
