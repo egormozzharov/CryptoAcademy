@@ -60,7 +60,7 @@ describe("ACDMPlatform", function () {
       expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("1000000000000000000"));
       expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(100000000);
       expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("10000000000"));
-      expect(await acdmPlatform.roundState()).to.be.equal(0);
+      expect((await acdmPlatform.round()).state).to.be.equal(0);
       expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
       expect(await acdmToken.balanceOf(acdmPlatform.address)).to.be.equal(await acdmPlatform.amountInCurrentPeriod());
     });
@@ -78,12 +78,12 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.startSaleRound();
 
       // assert
-      expect(await acdmPlatform.roundState()).to.be.equal(0);
+      expect((await acdmPlatform.round()).state).to.be.equal(0);
       expect(await acdmPlatform.isFirstRound()).to.be.equal(false);
       expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("10000000000000"));
       expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(4000103000000);
       expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("2"));
-      expect(await acdmPlatform.saleEndTime()).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
+      expect((await acdmPlatform.round()).endTime).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
     });
   });
 
@@ -160,9 +160,9 @@ describe("ACDMPlatform", function () {
       
       await expect(await acdmPlatform.startTradeRound())
         .to.emit(acdmPlatform, "TradeRoundStarted");
-        expect(await acdmPlatform.roundState()).to.be.equal(1);
+        expect((await acdmPlatform.round()).state).to.be.equal(1);
       await expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(0);
-      await expect(await acdmPlatform.tradingEndTime()).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
+      await expect((await acdmPlatform.round()).endTime).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
     });
 
     it("Shoud burn remaining tokens after sale round", async function () {
