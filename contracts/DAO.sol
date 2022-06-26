@@ -85,8 +85,9 @@ contract DAO is ReentrancyGuard {
         if (proposal.positiveVotes > proposal.negativeVotes) {
             address recipient = proposal.recipient;
             (bool success, bytes memory returndata) = recipient.call(proposal.callData);
-            if (success)
+            if (success) {
                 emit ProposalExecuted(_proposalId);
+            }
             else {
                 // https://ethereum.stackexchange.com/questions/109457/how-to-bubble-up-a-custom-error-when-using-delegatecall
                 if (returndata.length == 0) 

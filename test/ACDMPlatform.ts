@@ -106,7 +106,7 @@ describe("ACDMPlatform", function () {
     it("Shoud buy successfully", async function () {
       await acdmPlatform.startSaleRound();
       await expect(await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
-        .to.emit(acdmPlatform, "BuyACDM").withArgs(owner.address, 10000);
+        .to.emit(acdmPlatform, "ACDMBought").withArgs(owner.address, 10000);
       await expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(9999990000);
       expect(await ethers.provider.getBalance(acdmPlatform.address)).to.be.equal(ethers.utils.parseEther("0.000001"));
     });
@@ -117,8 +117,7 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.connect(address).register(addr2.address, addr1.address);
       await acdmPlatform.connect(address).startSaleRound();
       let addr1InitialBalance = await ethers.provider.getBalance(addr1.address);
-      await expect(await acdmPlatform.connect(address).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
-        .to.emit(acdmPlatform, "BuyACDM").withArgs(addr2.address, 10000);
+      await acdmPlatform.connect(address).buyACDM({ value: ethers.utils.parseEther("0.000001") });
       expect(await ethers.provider.getBalance(acdmPlatform.address)).to.be.equal(ethers.utils.parseEther("0.00000095"));
       let addr1CurrentBalance = await ethers.provider.getBalance(addr1.address);
       expect(addr1CurrentBalance.sub(addr1InitialBalance)).to.be.equal(ethers.utils.parseEther("0.00000005"));
@@ -132,8 +131,7 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.connect(address).startSaleRound();
       let addr1InitialBalance = await ethers.provider.getBalance(addr1.address);
       let ownerInitialBalance = await ethers.provider.getBalance(owner.address);
-      await expect(await acdmPlatform.connect(address).buyACDM({ value: ethers.utils.parseEther("0.000001") }))
-        .to.emit(acdmPlatform, "BuyACDM").withArgs(addr2.address, 10000);
+      await acdmPlatform.connect(address).buyACDM({ value: ethers.utils.parseEther("0.000001") });
       expect(await ethers.provider.getBalance(acdmPlatform.address)).to.be.equal(ethers.utils.parseEther("0.00000092"));
       let addr1CurrentBalance = await ethers.provider.getBalance(addr1.address);
       let ownerCurrentBalance = await ethers.provider.getBalance(owner.address);
@@ -228,7 +226,7 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.connect(owner).addOrder(amount, 10000000000);
 
       await expect(await acdmPlatform.connect(addr2).buyOrder(0, {value: 10000000000}))
-        .to.emit(acdmPlatform, "BuyOrder").withArgs(addr2.address, amount);
+        .to.emit(acdmPlatform, "OrderBought").withArgs(addr2.address, amount);
       await expect(await acdmToken.balanceOf(addr2.address)).to.be.equal(amount);
     });
 
@@ -244,9 +242,8 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.startTradeRound();
       await acdmToken.approve(acdmPlatform.address, amount);
       await acdmPlatform.connect(owner).addOrder(amount, 10000000000);
-      
-      await expect(await acdmPlatform.connect(addr2).buyOrder(0, {value: 10000000000}))
-        .to.emit(acdmPlatform, "BuyOrder").withArgs(addr2.address, 1);
+      await acdmPlatform.connect(addr2).buyOrder(0, {value: 10000000000})
+
       await expect(await acdmToken.balanceOf(addr2.address)).to.be.equal(1);
     });
   });

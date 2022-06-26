@@ -38,8 +38,8 @@ contract ACDMPlatform {
 
     event UserRegistered(address _newUser, address _referer);
     event SaleRoundStarted();
-    event BuyACDM(address buyer, uint amount);
-    event BuyOrder(address buyer, uint amount);
+    event ACDMBought(address buyer, uint amount);
+    event OrderBought(address buyer, uint amount);
     event TradeRoundStarted();
     event OrderAdded(uint _amount, uint _pricePerUnit, address owner);
     event OrderRemoved(uint orderId);
@@ -96,7 +96,7 @@ contract ACDMPlatform {
         address secondLevelRef = userReferer[firstLevelRef];
         if (firstLevelRef != address(0)) sendSaleRewardToRef1(firstLevelRef);
         if (secondLevelRef != address(0)) sendSaleRewardToRef2(secondLevelRef);
-        emit BuyACDM(msg.sender, amountToBuy);
+        emit ACDMBought(msg.sender, amountToBuy);
     }
 
     function startTradeRound() external {
@@ -138,14 +138,16 @@ contract ACDMPlatform {
         if (order.amount == amountToBuy) {
             order.isProcessed = true;
             order.amount = 0;
-        } else order.amount -= amountToBuy;
+        } else {
+            order.amount -= amountToBuy;
+        }
         tradingWeiAmount += msg.value;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
         address firstLevelRef = userReferer[msg.sender];
         address secondLevelRef = userReferer[firstLevelRef];
         if (firstLevelRef != address(0)) sendTradeRewardToRef1(firstLevelRef);
         if (secondLevelRef != address(0)) sendTradeRewardToRef2(secondLevelRef);
-        emit BuyOrder(msg.sender, amountToBuy);
+        emit OrderBought(msg.sender, amountToBuy);
     }
 
     function setRewardFractionForSaleRef1(uint _rewardFraction) external onlyEditorOrOwner {
