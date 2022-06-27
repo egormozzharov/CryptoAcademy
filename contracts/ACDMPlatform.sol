@@ -25,7 +25,6 @@ contract ACDMPlatform {
     address public immutable acdmToken;
     address public immutable owner;
     address public editor;
-    bool public isFirstRound;
     uint public pricePerUnitInCurrentPeriod;
     uint public amountInCurrentPeriod;
     uint public tradingWeiAmount;
@@ -61,10 +60,10 @@ contract ACDMPlatform {
         owner = msg.sender;
         acdmToken = _acdmToken;
         roundTime = _roundTime;
-        isFirstRound = true;
         tradingWeiAmount = 1 * 10**18;
-        amountInCurrentPeriod = 100000 * 10**5;
-        pricePerUnitInCurrentPeriod = (tradingWeiAmount / amountInCurrentPeriod);
+        pricePerUnitInCurrentPeriod = 10**2;
+        amountInCurrentPeriod = 10**5;
+        IERC20Mintable(_acdmToken).mint(address(this), amountInCurrentPeriod);
     }
 
     function setEditor(address _editor) external onlyOwner {
@@ -77,19 +76,6 @@ contract ACDMPlatform {
         emit UserRegistered(_newUser, _referer);
     }
 
-    function startSaleRound() external {
-        require(block.timestamp >= round.endTime, "Tranding period is not ended yet");
-        pricePerUnitInCurrentPeriod = getNextPricePerUnitInCurrentPeriod();
-        amountInCurrentPeriod = getNextAmountOfACDM();
-        isFirstRound = false;
-        round = Round({
-            state: RoundState.Sale,
-            endTime: uint248(block.timestamp + roundTime)
-        });
-        IERC20Mintable(acdmToken).mint(address(this), amountInCurrentPeriod);
-        emit SaleRoundStarted();
-    }
-
     function buyACDM() payable external {
         require(round.state == RoundState.Sale, "Sale should be active");
         uint amountToBuy = msg.value / pricePerUnitInCurrentPeriod;
@@ -100,18 +86,8 @@ contract ACDMPlatform {
         address secondLevelRef = userReferer[firstLevelRef];
         if (firstLevelRef != address(0)) sendSaleRewardToRef1(firstLevelRef);
         if (secondLevelRef != address(0)) sendSaleRewardToRef2(secondLevelRef);
+        trySwitchRoundType();
         emit ACDMBought(msg.sender, amountToBuy);
-    }
-
-    function startTradeRound() external {
-        require((block.timestamp > round.endTime) || (amountInCurrentPeriod == 0), "Sales period is not ended yet");
-        if (amountInCurrentPeriod > 0) IERC20Burnable(acdmToken).burn(address(this), amountInCurrentPeriod);
-        tradingWeiAmount = 0;
-        round = Round({
-            state: RoundState.Trading,
-            endTime: uint248(block.timestamp + roundTime)
-        });
-        emit TradeRoundStarted();
     }
 
     function addOrder(uint _amount, uint _pricePerUnit) external {
@@ -124,6 +100,7 @@ contract ACDMPlatform {
             owner: msg.sender
         });
         orders.push(order);
+        trySwitchRoundType();
         emit OrderAdded(_amount, _pricePerUnit, msg.sender);
     }
 
@@ -131,6 +108,7 @@ contract ACDMPlatform {
         Order storage order = orders[_orderId];
         IERC20(acdmToken).transfer(order.owner, order.amount);
         delete orders[_orderId];
+        trySwitchRoundType();
         emit OrderRemoved(_orderId);
     }
 
@@ -143,13 +121,14 @@ contract ACDMPlatform {
         if (order.amount == amountToBuy) 
             delete orders[_orderId];
         else
-             order.amount -= amountToBuy;
+            order.amount -= amountToBuy;
         tradingWeiAmount += msg.value;
         IERC20(acdmToken).transfer(msg.sender, amountToBuy);
         address firstLevelRef = userReferer[msg.sender];
         address secondLevelRef = userReferer[firstLevelRef];
         if (firstLevelRef != address(0)) sendTradeRewardToRef1(firstLevelRef);
         if (secondLevelRef != address(0)) sendTradeRewardToRef2(secondLevelRef);
+        trySwitchRoundType();
         emit OrderBought(msg.sender, amountToBuy);
     }
 
@@ -190,12 +169,38 @@ contract ACDMPlatform {
     }
 
     function getNextPricePerUnitInCurrentPeriod() private view returns(uint) {
-        if (isFirstRound) return pricePerUnitInCurrentPeriod;
-        return pricePerUnitInCurrentPeriod * 103 / 100 + 4 * 10**12;
+        return (pricePerUnitInCurrentPeriod * 103 / 100 + 40);
     }
 
     function getNextAmountOfACDM() private view returns(uint) {
-        if (isFirstRound) return amountInCurrentPeriod;
         return tradingWeiAmount / pricePerUnitInCurrentPeriod;
+    }
+
+    function trySwitchRoundType() private {
+        if ((round.state == RoundState.Sale) && ((block.timestamp > round.endTime) || (amountInCurrentPeriod == 0)))
+            startTradeRound();
+        else if ((round.state == RoundState.Trading) && (block.timestamp >= round.endTime))
+            startSaleRound();
+    }
+
+    function startSaleRound() private {
+        pricePerUnitInCurrentPeriod = getNextPricePerUnitInCurrentPeriod();
+        amountInCurrentPeriod = getNextAmountOfACDM();
+        round = Round({
+            state: RoundState.Sale,
+            endTime: uint248(block.timestamp + roundTime)
+        });
+        IERC20Mintable(acdmToken).mint(address(this), amountInCurrentPeriod);
+        emit SaleRoundStarted();
+    }
+
+    function startTradeRound() private {
+        if (amountInCurrentPeriod > 0) IERC20Burnable(acdmToken).burn(address(this), amountInCurrentPeriod);
+        tradingWeiAmount = 0;
+        round = Round({
+            state: RoundState.Trading,
+            endTime: uint248(block.timestamp + roundTime)
+        });
+        emit TradeRoundStarted();
     }
 }
