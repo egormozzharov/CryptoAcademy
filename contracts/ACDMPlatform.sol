@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./interfaces/IERC20Burnable.sol";
 import "./interfaces/IERC20Mintable.sol";
 
-import "hardhat/console.sol";
-
 contract ACDMPlatform {
     enum RoundState { Sale, Trading }
 
