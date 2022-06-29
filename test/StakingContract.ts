@@ -83,7 +83,6 @@ describe("StakingContract", function () {
     const acdmPlatformContractFactory: ContractFactory = await ethers.getContractFactory("ACDMPlatform");
     acdmPlatform = (await acdmPlatformContractFactory.connect(owner).deploy(acdmToken.address, roundInterval)) as ACDMPlatform;
     await acdmToken.deployed();
-
    });
 
   describe("stake", async function () {

@@ -3,11 +3,11 @@ import { ContractFactory, Contract } from 'ethers';
 
 async function main() {
   console.log("Deploying the contract...");
-  const contractFactory: ContractFactory = await ethers.getContractFactory("ERC20Basic");
+  const contractFactory: ContractFactory = await ethers.getContractFactory("ACDMToken");
   console.log("Contract factory");
-  const contract: Contract = await contractFactory.deploy({gasPrice: 70000000000});
+  const contract: Contract = await contractFactory.deploy(BigInt("100000000000"), {gasPrice: 70000000000});
   await contract.deployed();
-  console.log("ERC20Basic deployed to:", contract.address);
+  console.log("Contract deployed to:", contract.address);
 }
 main().catch((error) => {
   console.error(error);
