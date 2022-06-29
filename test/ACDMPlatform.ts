@@ -17,7 +17,7 @@ describe("ACDMPlatform", function () {
 
   beforeEach(async function () {
     [owner, addr1, addr2] = await ethers.getSigners();
-    
+
     const adcmTokenSypply = 1000 * 10^6;
     const acdmTokenContractFactory: ContractFactory = await ethers.getContractFactory("ACDMToken");
     acdmToken = (await acdmTokenContractFactory.connect(owner).deploy(adcmTokenSypply)) as ACDMToken;
@@ -161,6 +161,57 @@ describe("ACDMPlatform", function () {
       await acdmPlatform.connect(addr2).buyOrder(0, {value: 10000000000})
 
       await expect(await acdmToken.balanceOf(addr2.address)).to.be.equal(1);
+    });
+  });
+
+  describe("startSaleRound", function () {
+      it("Shoud start sale round successfully", async function () {
+          const amount = 1000;
+          await blockTimestampTools.forwardTimestamp(roundInterval);
+          await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000000000001") });
+          await acdmToken.approve(acdmPlatform.address, amount);
+          await acdmPlatform.connect(owner).addOrder(amount, 10000000000);
+          await acdmPlatform.connect(addr1).buyOrder(0, {value: 10000000000000});
+          await blockTimestampTools.forwardTimestamp(roundInterval);
+          await expect(await acdmPlatform.startSaleRound())
+            .to.emit(acdmPlatform, "SaleRoundStarted");
+
+          // assert
+          expect((await acdmPlatform.round()).state).to.be.equal(0);
+          expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(BigInt("10000000000000"));
+          expect(await acdmPlatform.pricePerUnitInCurrentPeriod()).to.be.equal(143);
+          expect(await acdmPlatform.amountInCurrentPeriod()).to.be.equal(BigInt("69930069930"));
+          expect((await acdmPlatform.round()).endTime).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
+      });
+  });
+
+  describe("startTradeRound", function () {
+    it("Shoud revert if sales period is not ended yet", async function () {
+      await expect(acdmPlatform.connect(owner).startTradeRound())
+        .to.revertedWith("Sales period is not ended yet");
+    });
+
+    it("Shoud start trade round if sales period is not ended yet but the tokens amount is zero", async function () {
+      await acdmPlatform.connect(owner).buyACDM({ value: 10000000 });
+      await expect((await acdmPlatform.round()).state).to.be.equal(1);
+    });
+
+    it("Shoud start trade round successfully", async function () {
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000000000001") });
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+
+      await expect(await acdmPlatform.startTradeRound())
+        .to.emit(acdmPlatform, "TradeRoundStarted");
+      await expect((await acdmPlatform.round()).state).to.be.equal(1);
+      await expect(await acdmPlatform.tradingWeiAmount()).to.be.equal(0);
+      await expect((await acdmPlatform.round()).endTime).to.be.equal(await blockTimestampTools.getCurrentBlockTimestamp() + roundInterval);
+    });
+
+    it("Shoud burn remaining tokens after sale round", async function () {
+      await acdmPlatform.connect(owner).buyACDM({ value: ethers.utils.parseEther("0.000000000001") });
+      await blockTimestampTools.forwardTimestamp(roundInterval);
+      await acdmPlatform.startTradeRound();
+      await expect(await acdmToken.balanceOf(acdmPlatform.address)).to.be.equal(0);
     });
   });
 

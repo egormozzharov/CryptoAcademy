@@ -63,6 +63,8 @@ contract ACDMPlatform {
         tradingWeiAmount = 1 * 10**18;
         pricePerUnitInCurrentPeriod = 10**2;
         amountInCurrentPeriod = 10**5;
+        round.state = RoundState.Sale;
+        round.endTime = uint248(block.timestamp + _roundTime);
         IERC20Mintable(_acdmToken).mint(address(this), amountInCurrentPeriod);
     }
 
@@ -132,7 +134,7 @@ contract ACDMPlatform {
     }
 
     function startSaleRound() public {
-        require(startSaleRoundCondition(), "Sales period is not ended yet");
+        require(startSaleRoundCondition(), "Trading period is not ended yet");
         pricePerUnitInCurrentPeriod = getNextPricePerUnitInCurrentPeriod();
         amountInCurrentPeriod = getNextAmountOfACDM();
         round = Round({
@@ -205,7 +207,7 @@ contract ACDMPlatform {
             startSaleRound();
     }
 
-    function startTradeRoundCondition() private returns(bool) { 
+    function startTradeRoundCondition() private returns(bool) {
         return (round.state == RoundState.Sale) && ((block.timestamp >= round.endTime) || (amountInCurrentPeriod == 0));
     }
 

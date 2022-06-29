@@ -12,7 +12,6 @@ contract StakingContract is ReentrancyGuard {
     address public immutable _rewardTokenAddress;
     address public owner;
     address public _daoContract;
-    bool public isDaoInitialized;
     uint256 public _rewardPercentage;
 
     mapping(address => uint256) public balances;
