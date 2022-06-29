@@ -28,10 +28,10 @@ contract ACDMPlatform {
     uint public pricePerUnitInCurrentPeriod;
     uint public amountInCurrentPeriod;
     uint public tradingWeiAmount;
-    uint public rewardFractionForSaleRef1 = 50;
-    uint public rewardFractionForSaleRef2 = 30;
-    uint public rewardFractionForTradeRef1 = 25;
-    uint public rewardFractionForTradeRef2 = 25;
+    uint16 public rewardFractionForSaleRef1 = 50;
+    uint16 public rewardFractionForSaleRef2 = 30;
+    uint16 public rewardFractionForTradeRef1 = 25;
+    uint16 public rewardFractionForTradeRef2 = 25;
     Round public round;
 
     Order[] public orders;
@@ -156,22 +156,22 @@ contract ACDMPlatform {
         emit TradeRoundStarted();
     }
 
-    function setRewardFractionForSaleRef1(uint _rewardFraction) external onlyEditorOrOwner {
+    function setRewardFractionForSaleRef1(uint16 _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForSaleRef1 = _rewardFraction;
     }
 
-    function setRewardFractionForSaleRef2(uint _rewardFraction) external onlyEditorOrOwner {
+    function setRewardFractionForSaleRef2(uint16 _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForSaleRef2 = _rewardFraction;
     }
 
-    function setRewardFractionForTradeRef1(uint _rewardFraction) external onlyEditorOrOwner {
+    function setRewardFractionForTradeRef1(uint16 _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForTradeRef1 = _rewardFraction;
     }
 
-    function setRewardFractionForTradeRef2(uint _rewardFraction) external onlyEditorOrOwner {
+    function setRewardFractionForTradeRef2(uint16 _rewardFraction) external onlyEditorOrOwner {
         require(_rewardFraction < 1000, "Reward fraction should be less than 1000");
         rewardFractionForTradeRef2 = _rewardFraction;
     }
