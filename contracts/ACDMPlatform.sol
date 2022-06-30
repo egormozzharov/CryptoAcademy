@@ -23,14 +23,14 @@ contract ACDMPlatform {
     address public immutable acdmToken;
     address public immutable owner;
     address public editor;
-    uint public pricePerUnitInCurrentPeriod;
-    uint public amountInCurrentPeriod;
-    uint public tradingWeiAmount;
+    Round public round;
     uint16 public rewardFractionForSaleRef1 = 50;
     uint16 public rewardFractionForSaleRef2 = 30;
     uint16 public rewardFractionForTradeRef1 = 25;
     uint16 public rewardFractionForTradeRef2 = 25;
-    Round public round;
+    uint public pricePerUnitInCurrentPeriod;
+    uint public amountInCurrentPeriod;
+    uint public tradingWeiAmount;
 
     Order[] public orders;
     mapping (address => address) public userReferer;
