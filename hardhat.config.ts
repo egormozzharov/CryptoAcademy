@@ -8,11 +8,15 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 import { commonTasks } from './tasks/CommonTasks';
 import { daoTasks } from './tasks/DAOTasks';
+import { acdmPlatformTasks } from './tasks/ACDMPlatformTasks';
+import { stakingTasks } from './tasks/StakingTasks';
 
 dotenv.config();
 
 commonTasks();
 daoTasks();
+acdmPlatformTasks();
+stakingTasks();
 
 const config: HardhatUserConfig = {
   solidity: "0.8.4",

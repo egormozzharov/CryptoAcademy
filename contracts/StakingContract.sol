@@ -34,12 +34,11 @@ contract StakingContract is ReentrancyGuard {
     }
 
     function setMerkleTreeRoot(bytes32 root) external {
-        // require(_daoContract != address(0), "DAO Contract address should be set");
-        // require(msg.sender == _daoContract, "Only DAO Contract is allowed to set MerkleTreeRoot");
+        require(msg.sender == _daoContract || msg.sender == owner, "Only DAO Contract or owner is allowed to set MerkleTreeRoot");
         _merkleRoot = root;
     }
 
-    function isInWhiteList(bytes32[] memory proof) external view returns(bool) {
+    function isInWhiteList(bytes32[] memory proof) public view returns(bool) {
         bytes32 _leaf = keccak256(abi.encodePacked(msg.sender));
         return MerkleProof.verify(proof, _merkleRoot, _leaf);
     }
@@ -53,7 +52,7 @@ contract StakingContract is ReentrancyGuard {
     }
 
     function stake(uint256 amount, bytes32[] memory proof) external {
-        // require(isInWhiteList(proof), "You are not allowed to stake");
+        require(isInWhiteList(proof), "You are not allowed to stake");
         require(balances[msg.sender] == 0, "You already have tokens staked");
         _claim();
         IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
