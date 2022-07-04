@@ -36,10 +36,11 @@ export function stakingTasks() {
 
     task("stake", "Stake tokens")
     .addParam("value", "integer")
-    .setAction(async (taskArgs: any, hre: HardhatRuntimeEnvironment) => {
+    .addParam("proof")
+    .setAction(async ({value, proof}, hre: HardhatRuntimeEnvironment) => {
         const [owner] = await hre.ethers.getSigners();
         const contract = (await hre.ethers.getContractAt("StakingContract", STAKING_CONTARCT_ADDRESS)) as StakingContract;
-        await contract.connect(owner).stake(taskArgs.value);
+        await contract.connect(owner).stake(value, proof);
     });
 
     task("claim", "Claim reward tokens")

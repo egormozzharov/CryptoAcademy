@@ -11,6 +11,7 @@ import { XXXToken } from '../typechain-types/contracts/XXXToken';
 import { DAO } from '../typechain-types/contracts/DAO';
 import { ACDMPlatform } from '../typechain-types/contracts/ACDMPlatform';
 import { ACDMToken } from '../typechain-types/contracts/ACDMToken';
+import { MerkleTree } from "merkletreejs";
 
 describe("StakingContract", function () {
 
@@ -22,6 +23,7 @@ describe("StakingContract", function () {
   let addr2: SignerWithAddress;
   let lpToken: IERC20;
   let acdmToken: ACDMToken;
+  let tree: MerkleTree;
 
   const UniswapV2Router02Address: string = "0x7a250d5630B4cF539739dF2C5dAcb4c659F2488D";
   const UniswapV2FactoryAddress: string = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
@@ -83,20 +85,39 @@ describe("StakingContract", function () {
     const acdmPlatformContractFactory: ContractFactory = await ethers.getContractFactory("ACDMPlatform");
     acdmPlatform = (await acdmPlatformContractFactory.connect(owner).deploy(acdmToken.address, roundInterval)) as ACDMPlatform;
     await acdmToken.deployed();
+
+    tree = getTree();
+    await stakingContract.connect(owner).setMerkleTreeRoot(tree.getHexRoot());
    });
+
+   describe("whitelist", async function () {
+    it("Should return true if an address is in a whitelist", async function () {
+      const proof: string[] = getProof(owner.address);
+      let result = await stakingContract.connect(owner).isInWhiteList(proof);
+      await expect(result).to.be.equal(true);
+    });
+
+    it("Should return false if an address is not in a whitelist", async function () {
+      const proof: string[] = getProof(addr1.address);
+      let result = await stakingContract.connect(owner).isInWhiteList(proof);
+      await expect(result).to.be.equal(false);
+    });
+  });
 
   describe("stake", async function () {
     it("Should revert if already have a stake", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await stakingContract.connect(owner).stake(100);
-      await expect(stakingContract.connect(owner).stake(100)).to.be.revertedWith("You already have tokens staked");
+      await stakingContract.connect(owner).stake(100, proof);
+      await expect(stakingContract.connect(owner).stake(100, proof)).to.be.revertedWith("You already have tokens staked");
     });
 
     it("Shoud stake succsesfully", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await expect(await stakingContract.connect(owner).stake(100))
+      await expect(await stakingContract.connect(owner).stake(100, proof))
       .to.emit(stakingContract, "TokensStaked").withArgs(owner.address, 100);
       expect(await stakingContract.connect(owner).balances(owner.address)).to.eq(100);
     });
@@ -114,18 +135,20 @@ describe("StakingContract", function () {
     });
 
     it("Shoud revert when tokens are locked by an acrive DAO proposal", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
       await daoContract.connect(owner).addProposal("Description", getExternalContractCallData(50), acdmPlatform.address);
-      await stakingContract.connect(owner).stake(100);
+      await stakingContract.connect(owner).stake(100, proof);
       await daoContract.connect(owner).voteProposal(1, true);
       await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("Tokens are only available after dao proposals intervals has elapsed");
     });
 
     it("Shoud revert when timestamp is greater that reward time", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await stakingContract.connect(owner).stake(100);
+      await stakingContract.connect(owner).stake(100, proof);
       await expect(stakingContract.connect(owner).unstake()).to.be.revertedWith("Tokens are only available after correct time period has elapsed");
     });
 
@@ -136,9 +159,10 @@ describe("StakingContract", function () {
     });
     
     it("Shoud unstake succsesfully", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await stakingContract.connect(owner).stake(100);
+      await stakingContract.connect(owner).stake(100, proof);
       await blockTimestampTools.forwardTimestamp(3600);
       await expect(await stakingContract.connect(owner).unstake())
       .to.emit(stakingContract, "TokensUnstaked").withArgs(owner.address, 100);
@@ -148,9 +172,10 @@ describe("StakingContract", function () {
 
   describe("claim", function () {
     it("Shoud revert if reward period has not elapsed", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await stakingContract.connect(owner).stake(100);
+      await stakingContract.connect(owner).stake(100, proof);
       await expect(stakingContract.connect(owner).claim()).to.be.revertedWith("Tokens are only available after correct time period has elapsed");
     });
 
@@ -161,18 +186,20 @@ describe("StakingContract", function () {
     });
 
     it("Should claim successfully", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await stakingContract.connect(owner).stake(100);
+      await stakingContract.connect(owner).stake(100, proof);
       await blockTimestampTools.forwardTimestamp(4000);
       expect(await stakingContract.connect(owner).claim())
       .to.emit(stakingContract, "RewardsClaimed").withArgs(owner.address, 20);
     });
 
     it("Should claim successfully after multiple rewards periods", async function () {
+      const proof: string[] = getProof(owner.address);
       await stakingContract.setDao(daoContract.address);
       await daoContract.setStaking(stakingContract.address);
-      await stakingContract.connect(owner).stake(100);
+      await stakingContract.connect(owner).stake(100, proof);
       await blockTimestampTools.forwardTimestamp(9000);
       expect(await stakingContract.connect(owner).claim())
       .to.emit(stakingContract, "RewardsClaimed").withArgs(owner.address, 40);
@@ -183,5 +210,21 @@ describe("StakingContract", function () {
     let jsonAbi = [{ "constant": false, "inputs": [{ "name": "_rewardFraction", "type": "uint256" }], "name": "setRewardFractionForSaleRef1", "outputs": [], "payable": false, "stateMutability": "nonpayable", "type": "function" }];
     let iFace = new ethers.utils.Interface(jsonAbi);
     return iFace.encodeFunctionData('setRewardFractionForSaleRef1', [amount]);
+  }
+
+  function getTree() {
+    const leaves = ['0x518908A264BdAa5E0a48ac433f7AecD29BFd7eD6', '0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266', '0x70997970C51812dc3A010C7d01b50e0d17dc79C8', '0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC',
+    '0x90F79bf6EB2c4f870365E785982E1f101E93b906'].map(x => ethers.utils.keccak256(x));
+    const tree = new MerkleTree(leaves, ethers.utils.keccak256, {
+      sortLeaves: true,
+      sortPairs: true
+    });
+    return tree;
+  }
+
+  function getProof(addrToVerify: string) {
+    const leaf = ethers.utils.keccak256(addrToVerify);
+    const proof: string[] = tree.getHexProof(leaf);
+    return proof;
   }
 });

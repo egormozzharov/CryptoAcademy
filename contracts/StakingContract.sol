@@ -3,8 +3,11 @@ pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import "./interfaces/IERC20Mintable.sol";
 import "./interfaces/IDAO.sol";
+
+import "hardhat/console.sol";
 
 contract StakingContract is ReentrancyGuard {
     uint256 public immutable _rewardIntervalInSeconds;
@@ -12,6 +15,7 @@ contract StakingContract is ReentrancyGuard {
     address public immutable _rewardTokenAddress;
     address public owner;
     address public _daoContract;
+    bytes32 public _merkleRoot;
     uint256 public _rewardPercentage;
 
     mapping(address => uint256) public balances;
@@ -29,6 +33,17 @@ contract StakingContract is ReentrancyGuard {
         _rewardIntervalInSeconds = rewardIntervalInSeconds;
     }
 
+    function setMerkleTreeRoot(bytes32 root) external {
+        // require(_daoContract != address(0), "DAO Contract address should be set");
+        // require(msg.sender == _daoContract, "Only DAO Contract is allowed to set MerkleTreeRoot");
+        _merkleRoot = root;
+    }
+
+    function isInWhiteList(bytes32[] memory proof) external view returns(bool) {
+        bytes32 _leaf = keccak256(abi.encodePacked(msg.sender));
+        return MerkleProof.verify(proof, _merkleRoot, _leaf);
+    }
+
     function balanceOf(address _address) external view returns (uint) {
         return balances[_address];
     }
@@ -37,7 +52,8 @@ contract StakingContract is ReentrancyGuard {
         _daoContract = daoContract;
     }
 
-    function stake(uint256 amount) external {
+    function stake(uint256 amount, bytes32[] memory proof) external {
+        // require(isInWhiteList(proof), "You are not allowed to stake");
         require(balances[msg.sender] == 0, "You already have tokens staked");
         _claim();
         IERC20(_stakingTokenAddress).transferFrom(msg.sender, address(this), amount);
